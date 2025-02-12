@@ -18,7 +18,7 @@ const HeroSection = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start px-4 py-8 text-black">
+    <div className="min-h-[calc(100vh-64px)] flex flex-col items-center justify-start px-4 py-12 text-black">
       <div className="w-full max-w-6xl mx-auto space-y-16">
         {/* Hero Content */}
         <div className="text-center space-y-6">
@@ -41,7 +41,7 @@ const HeroSection = () => {
         {/* Video Preview Section */}
         <div className="relative w-full max-w-4xl mx-auto">
           <div className="aspect-video rounded-2xl bg-gray-200 overflow-hidden">
-            {/* You can add the video/image here */}
+            {/* Video placeholder */}
           </div>
         </div>
 
