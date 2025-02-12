@@ -1,61 +1,66 @@
 
-import { MessageSquare, Trophy, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
   const features = [
     {
-      icon: <MessageSquare className="w-6 h-6 text-emerald-400" />,
-      title: "AI-Powered Conversations",
-      description: "Practice with dynamic, realistic sales scenarios",
+      title: "User-Friendly",
+      description: "AI sales coaching that's built for you, not a sales trainer.",
     },
     {
-      icon: <Trophy className="w-6 h-6 text-emerald-400" />,
-      title: "Track Progress",
-      description: "Earn XP and level up your sales skills",
+      title: "Rep-Friendly",
+      description: "You'll love how easy it is to practice and improve your sales skills.",
     },
     {
-      icon: <UserPlus className="w-6 h-6 text-emerald-400" />,
-      title: "Expert Coaching",
-      description: "Get personalized feedback and improvement tips",
+      title: "Professional",
+      description: "Sharpen your pitch, handle objections, and close deals with confidence.",
     },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 text-white">
-      <div className="text-center space-y-6 animate-fade-in">
-        <div className="inline-block px-4 py-1.5 mb-4 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-          <span className="text-sm font-medium text-emerald-400">Sales Training Reimagined</span>
-        </div>
-        <h1 className="text-4xl md:text-6xl font-bold max-w-3xl">
-          Level Up Your Sales Skills with AI-Powered Roleplay
-        </h1>
-        <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-          Practice sales conversations, handle objections, and receive instant feedback to improve your performance.
-        </p>
-        <div className="flex flex-wrap gap-4 justify-center mt-8">
-          <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white">
-            Start Training
-          </Button>
-          <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/10 text-white">
-            Watch Demo
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 max-w-6xl w-full px-4">
-        {features.map((feature, index) => (
-          <div
-            key={index}
-            className="p-6 rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 hover:scale-105 transition-transform duration-200"
-          >
-            <div className="h-12 w-12 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4">
-              {feature.icon}
-            </div>
-            <h3 className="text-xl font-semibold mb-2 text-white">{feature.title}</h3>
-            <p className="text-gray-400">{feature.description}</p>
+    <div className="min-h-screen flex flex-col items-center justify-start px-4 py-8 text-black">
+      <div className="w-full max-w-6xl mx-auto space-y-16">
+        {/* Hero Content */}
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-800">
+            AI-powered role-playing for sales reps
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Get better at sales within 3 days - AI sales coaching that sharpens your skills instantly.
+          </p>
+          <div className="mt-8">
+            <Button 
+              size="lg" 
+              className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg px-8 py-6 h-auto rounded-xl"
+            >
+              Try LevellUp For Free
+            </Button>
           </div>
-        ))}
+        </div>
+
+        {/* Video Preview Section */}
+        <div className="relative w-full max-w-4xl mx-auto">
+          <div className="aspect-video rounded-2xl bg-gray-200 overflow-hidden">
+            {/* You can add the video/image here */}
+          </div>
+        </div>
+
+        {/* Tagline */}
+        <div className="text-center">
+          <h2 className="text-3xl md:text-5xl font-bold text-gray-800">
+            Practise. Improve. Book More Meetings. Close More Deals.
+          </h2>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-16">
+          {features.map((feature, index) => (
+            <div key={index} className="text-center space-y-4">
+              <h3 className="text-2xl font-bold text-gray-800">{feature.title}</h3>
+              <p className="text-gray-600 text-lg">{feature.description}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
