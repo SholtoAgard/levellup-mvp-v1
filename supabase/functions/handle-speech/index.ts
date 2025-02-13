@@ -23,10 +23,12 @@ serve(async (req) => {
     if (type === 'speech-to-text') {
       console.log('Processing speech to text...');
       
-      // Create form data for Whisper API
-      const formData = new FormData()
+      // Process base64 audio data more efficiently
       const audioData = Uint8Array.from(atob(audio), c => c.charCodeAt(0))
       const blob = new Blob([audioData], { type: 'audio/webm' })
+      
+      // Create form data for Whisper API
+      const formData = new FormData()
       formData.append('file', blob, 'audio.webm')
       formData.append('model', 'whisper-1')
 
