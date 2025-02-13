@@ -4,9 +4,9 @@ import HeroSection from "@/components/HeroSection";
 
 const Index = () => {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-[#FFFFFF]">
       <Header />
-      <div className="py-16"> {/* Changed pt-16 to py-16 for better spacing */}
+      <div className="py-16">
         <HeroSection />
       </div>
     </main>
