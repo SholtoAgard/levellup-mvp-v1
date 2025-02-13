@@ -6,6 +6,8 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
+import { MicrophoneIcon, StopCircle, Volume2, VolumeX } from "lucide-react";
+import { useRef, useCallback } from "react";
 
 const avatars = [
   { id: "chloe-formal-1", name: "Chloe", style: "Formal 1", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
@@ -29,6 +31,10 @@ const Dashboard = () => {
   const [messages, setMessages] = useState<RoleplayMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     if (currentSession) {
@@ -130,15 +136,16 @@ const Dashboard = () => {
     }
   };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !currentSession) return;
+  const sendMessage = async (text?: string) => {
+    if ((!text && !newMessage.trim()) || !currentSession) return;
 
     setIsLoading(true);
     try {
+      const messageToSend = text || newMessage;
       const { data, error } = await supabase.functions.invoke('handle-roleplay', {
         body: {
           sessionId: currentSession.id,
-          message: newMessage,
+          message: messageToSend,
           context: currentSession.status === 'in_progress' ? {
             avatar_id: currentSession.avatar_id,
             roleplay_type: currentSession.roleplay_type,
@@ -147,12 +154,15 @@ const Dashboard = () => {
         }
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setNewMessage("");
       await loadMessages();
+      
+      // Speak the AI's response
+      if (data.response) {
+        await speakText(data.response);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -216,6 +226,95 @@ const Dashboard = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result?.toString().split(',')[1];
+          if (base64Audio) {
+            try {
+              const { data, error } = await supabase.functions.invoke('handle-speech', {
+                body: { audio: base64Audio, type: 'speech-to-text' }
+              });
+
+              if (error) throw error;
+              if (data.text) {
+                setNewMessage(data.text);
+                await sendMessage(data.text);
+              }
+            } catch (error) {
+              console.error('Error converting speech to text:', error);
+              toast({
+                title: "Error",
+                description: "Failed to convert speech to text",
+                variant: "destructive",
+              });
+            }
+          }
+        };
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      toast({
+        title: "Error",
+        description: "Failed to access microphone",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+    }
+  };
+
+  const speakText = async (text: string) => {
+    if (isSpeaking) return;
+    
+    try {
+      setIsSpeaking(true);
+      const { data, error } = await supabase.functions.invoke('handle-speech', {
+        body: { audio: text, type: 'text-to-speech' }
+      });
+
+      if (error) throw error;
+
+      if (data.audioContent) {
+        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+        audio.onended = () => setIsSpeaking(false);
+        await audio.play();
+      }
+    } catch (error) {
+      console.error('Error converting text to speech:', error);
+      toast({
+        title: "Error",
+        description: "Failed to convert text to speech",
+        variant: "destructive",
+      });
+      setIsSpeaking(false);
     }
   };
 
@@ -369,9 +468,19 @@ const Dashboard = () => {
                           message.role === 'user'
                             ? 'bg-[#1E90FF] text-white'
                             : 'bg-gray-100 text-gray-900'
-                        }`}
+                        } relative group`}
                       >
                         {message.content}
+                        {message.role === 'ai' && (
+                          <Button
+                            className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                            variant="secondary"
+                            size="icon"
+                            onClick={() => speakText(message.content)}
+                          >
+                            <Volume2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -392,8 +501,18 @@ const Dashboard = () => {
                     }}
                   />
                   <Button
+                    className={`${isRecording ? 'bg-red-500' : 'bg-blue-500'} hover:bg-opacity-90 text-white`}
+                    onClick={isRecording ? stopRecording : startRecording}
+                  >
+                    {isRecording ? (
+                      <StopCircle className="w-5 h-5" />
+                    ) : (
+                      <MicrophoneIcon className="w-5 h-5" />
+                    )}
+                  </Button>
+                  <Button
                     className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white px-6"
-                    onClick={sendMessage}
+                    onClick={() => sendMessage()}
                     disabled={isLoading}
                   >
                     {isLoading ? (
