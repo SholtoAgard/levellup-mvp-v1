@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
@@ -55,7 +54,12 @@ const Dashboard = () => {
       return;
     }
 
-    setMessages(data);
+    if (data) {
+      setMessages(data.map(msg => ({
+        ...msg,
+        role: msg.role as 'user' | 'ai'
+      })));
+    }
   };
 
   const startRoleplay = async () => {
@@ -68,13 +72,26 @@ const Dashboard = () => {
       return;
     }
 
+    const { data: userSession } = await supabase.auth.getSession();
+    const userId = userSession.session?.user.id;
+
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to start a roleplay session",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { data: session, error } = await supabase
       .from('roleplay_sessions')
       .insert({
+        user_id: userId,
         avatar_id: selectedAvatar,
         roleplay_type: selectedRolePlay,
         scenario_description: rolePlayDescription,
-        status: 'in_progress'
+        status: 'in_progress' as const
       })
       .select()
       .single();
@@ -88,11 +105,24 @@ const Dashboard = () => {
       return;
     }
 
-    setCurrentSession(session);
-    toast({
-      title: "Roleplay Started",
-      description: "You can now begin your conversation with the AI.",
-    });
+    if (session) {
+      setCurrentSession({
+        id: session.id,
+        avatar_id: session.avatar_id,
+        roleplay_type: session.roleplay_type,
+        scenario_description: session.scenario_description,
+        status: session.status as 'in_progress' | 'completed' | 'abandoned',
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+        score: session.score,
+        feedback: session.feedback
+      });
+
+      toast({
+        title: "Roleplay Started",
+        description: "You can now begin your conversation with the AI.",
+      });
+    }
   };
 
   const sendMessage = async () => {
@@ -137,7 +167,6 @@ const Dashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {/* Sidebar */}
         <Sidebar>
           <SidebarContent>
             <div className="p-4 mb-4">
@@ -194,12 +223,10 @@ const Dashboard = () => {
           </SidebarContent>
         </Sidebar>
 
-        {/* Main Content */}
         <div className="flex-1 p-8">
           <div className="max-w-4xl mx-auto space-y-12">
             {!currentSession ? (
               <>
-                {/* Avatar Selection */}
                 <section>
                   <h2 className="text-2xl font-semibold mb-6">Select your avatar:</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
@@ -221,7 +248,6 @@ const Dashboard = () => {
                   </div>
                 </section>
 
-                {/* Role Play Type Selection */}
                 <section>
                   <h2 className="text-2xl font-semibold mb-6">Type of role play:</h2>
                   <div className="flex gap-4 flex-wrap">
@@ -241,7 +267,6 @@ const Dashboard = () => {
                   </div>
                 </section>
 
-                {/* Role Play Description */}
                 <section>
                   <h2 className="text-2xl font-semibold mb-6">
                     Tell me about your role-play situation. What are you looking to achieve?
@@ -254,7 +279,6 @@ const Dashboard = () => {
                   />
                 </section>
 
-                {/* Start Button */}
                 <Button 
                   className="w-full max-w-md mx-auto block py-6 text-lg bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
                   onClick={startRoleplay}
@@ -263,9 +287,7 @@ const Dashboard = () => {
                 </Button>
               </>
             ) : (
-              // Chat Interface
               <div className="h-[calc(100vh-8rem)] flex flex-col">
-                {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg">
                   {messages.map((message) => (
                     <div
@@ -285,7 +307,6 @@ const Dashboard = () => {
                   ))}
                 </div>
 
-                {/* Input Area */}
                 <div className="flex gap-4">
                   <input
                     type="text"
