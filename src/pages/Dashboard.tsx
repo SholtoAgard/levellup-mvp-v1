@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
@@ -136,13 +135,8 @@ const Dashboard = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/handle-roleplay', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
+        body: {
           sessionId: currentSession.id,
           message: newMessage,
           context: currentSession.status === 'in_progress' ? {
@@ -150,16 +144,17 @@ const Dashboard = () => {
             roleplay_type: currentSession.roleplay_type,
             scenario_description: currentSession.scenario_description
           } : undefined
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send message');
+      if (error) {
+        throw error;
       }
 
       setNewMessage("");
       await loadMessages();
     } catch (error) {
+      console.error('Error sending message:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to send message",
