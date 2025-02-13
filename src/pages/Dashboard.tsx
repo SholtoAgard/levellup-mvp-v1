@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
@@ -55,10 +56,14 @@ const Dashboard = () => {
     }
 
     if (data) {
-      setMessages(data.map(msg => ({
-        ...msg,
-        role: msg.role as 'user' | 'ai'
-      })));
+      const typedMessages: RoleplayMessage[] = data.map(msg => ({
+        id: msg.id,
+        session_id: msg.session_id,
+        role: msg.role as 'user' | 'ai',
+        content: msg.content,
+        created_at: msg.created_at
+      }));
+      setMessages(typedMessages);
     }
   };
 
@@ -106,7 +111,7 @@ const Dashboard = () => {
     }
 
     if (session) {
-      setCurrentSession({
+      const typedSession: RoleplaySession = {
         id: session.id,
         avatar_id: session.avatar_id,
         roleplay_type: session.roleplay_type,
@@ -114,10 +119,11 @@ const Dashboard = () => {
         status: session.status as 'in_progress' | 'completed' | 'abandoned',
         created_at: session.created_at,
         updated_at: session.updated_at,
-        score: session.score,
-        feedback: session.feedback
-      });
-
+        score: session.score || undefined,
+        feedback: session.feedback || undefined
+      };
+      
+      setCurrentSession(typedSession);
       toast({
         title: "Roleplay Started",
         description: "You can now begin your conversation with the AI.",
