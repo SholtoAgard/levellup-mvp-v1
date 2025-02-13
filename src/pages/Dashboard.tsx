@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
@@ -6,7 +7,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
-import { MicrophoneIcon, StopCircle, Volume2, VolumeX } from "lucide-react";
+import { Mic, StopCircle, Volume2, VolumeX } from "lucide-react";
 import { useRef, useCallback } from "react";
 
 const avatars = [
@@ -507,7 +508,7 @@ const Dashboard = () => {
                     {isRecording ? (
                       <StopCircle className="w-5 h-5" />
                     ) : (
-                      <MicrophoneIcon className="w-5 h-5" />
+                      <Mic className="w-5 h-5" />
                     )}
                   </Button>
                   <Button
