@@ -100,7 +100,7 @@ FEEDBACK: [detailed feedback]`;
     }
 
     // Handle regular message exchange
-    const systemPrompt = "You are an AI sales roleplay partner. ";
+    let systemPrompt = "You are an AI sales roleplay partner. ";
     if (context) {
       systemPrompt += `You are playing the role of a prospect in a ${context.roleplay_type} scenario. ${context.scenario_description}
       Provide realistic responses, objections, and challenges that a prospect might raise. Be engaging but also challenging.`;
