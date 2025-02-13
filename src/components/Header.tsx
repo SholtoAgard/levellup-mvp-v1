@@ -34,37 +34,37 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-gray-900">LevellUp</span>
+            <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>LevellUp</span>
           </Link>
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-gray-700 hover:text-gray-900">HOME</Link>
-            <Link to="/features" className="text-gray-700 hover:text-gray-900">FEATURES</Link>
-            <Link to="/pricing" className="text-gray-700 hover:text-gray-900">PRICING</Link>
-            <Link to="/newsletter" className="text-gray-700 hover:text-gray-900">JOIN NEWSLETTER</Link>
+            <Link to="/" className="text-[#222222] hover:text-gray-900 text-base font-medium">HOME</Link>
+            <Link to="/features" className="text-[#222222] hover:text-gray-900 text-base font-medium">FEATURES</Link>
+            <Link to="/pricing" className="text-[#222222] hover:text-gray-900 text-base font-medium">PRICING</Link>
+            <Link to="/newsletter" className="text-[#222222] hover:text-gray-900 text-base font-medium">JOIN NEWSLETTER</Link>
             {session ? (
               <>
-                <Link to="/dashboard" className="text-gray-700 hover:text-gray-900">DASHBOARD</Link>
+                <Link to="/dashboard" className="text-[#222222] hover:text-gray-900 text-base font-medium">DASHBOARD</Link>
                 <Button
                   variant="ghost"
                   onClick={handleLogout}
-                  className="text-gray-700 hover:text-gray-900"
+                  className="text-[#222222] hover:text-gray-900 text-base font-medium"
                 >
                   LOG OUT
                 </Button>
               </>
             ) : (
-              <Link to="/auth" className="text-gray-700 hover:text-gray-900">LOG IN</Link>
+              <Link to="/auth" className="text-[#222222] hover:text-gray-900 text-base font-medium">LOG IN</Link>
             )}
           </nav>
 
           {/* CTA Button */}
           <Button 
-            className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+            className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white rounded-lg px-6 py-2 text-base font-medium"
             onClick={() => navigate(session ? "/dashboard" : "/auth")}
           >
-            {session ? "GO TO DASHBOARD" : "FREE TRIAL"}
+            FREE TRIAL
           </Button>
         </div>
       </div>
