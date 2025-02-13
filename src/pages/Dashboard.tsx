@@ -305,8 +305,24 @@ const Dashboard = () => {
       if (error) throw error;
 
       if (data.audioContent) {
-        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-        audio.onended = () => setIsSpeaking(false);
+        const binaryString = atob(data.audioContent);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audio = new Audio(audioUrl);
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        audio.onerror = (e) => {
+          console.error('Audio playback error:', e);
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
         await audio.play();
       }
     } catch (error) {
