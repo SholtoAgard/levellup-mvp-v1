@@ -19,7 +19,7 @@ const HeroSection = () => {
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex flex-col items-center justify-start px-4 py-12 text-black">
-      <div className="w-full max-w-6xl mx-auto space-y-16">
+      <div className="w-full max-w-6xl mx-auto space-y-12">
         {/* Hero Content */}
         <div className="text-center space-y-6">
           <h1 className="text-4xl md:text-6xl font-bold text-[#222222]" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
@@ -35,13 +35,6 @@ const HeroSection = () => {
             >
               Try LevellUp For Free
             </Button>
-          </div>
-        </div>
-
-        {/* Video Preview Section */}
-        <div className="relative w-full max-w-4xl mx-auto">
-          <div className="aspect-video rounded-2xl bg-gray-100 overflow-hidden">
-            {/* Video placeholder */}
           </div>
         </div>
 
