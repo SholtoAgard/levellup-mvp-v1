@@ -28,6 +28,20 @@ const Header = () => {
     navigate("/");
   };
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const headerOffset = 64; // Height of the fixed header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-white z-50 border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,8 +54,8 @@ const Header = () => {
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             <Link to="/" className="text-[#222222] hover:text-gray-900 text-base font-medium">HOME</Link>
-            <Link to="/features" className="text-[#222222] hover:text-gray-900 text-base font-medium">FEATURES</Link>
-            <Link to="/pricing" className="text-[#222222] hover:text-gray-900 text-base font-medium">PRICING</Link>
+            <button onClick={() => scrollToSection('features')} className="text-[#222222] hover:text-gray-900 text-base font-medium">FEATURES</button>
+            <button onClick={() => scrollToSection('pricing')} className="text-[#222222] hover:text-gray-900 text-base font-medium">PRICING</button>
             <Link to="/newsletter" className="text-[#222222] hover:text-gray-900 text-base font-medium">JOIN NEWSLETTER</Link>
             {session ? (
               <>
