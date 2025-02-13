@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
@@ -8,7 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
 import { Mic, StopCircle, Volume2, VolumeX } from "lucide-react";
-import { useRef, useCallback } from "react";
+import { useRef } from "react";
 
 const avatars = [
   { id: "chloe-formal-1", name: "Chloe", style: "Formal 1", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
@@ -233,7 +232,9 @@ const Dashboard = () => {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm',
+      });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
