@@ -165,6 +165,60 @@ const Dashboard = () => {
     }
   };
 
+  const requestScoring = async () => {
+    if (!currentSession) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
+        body: {
+          sessionId: currentSession.id,
+          requestScoring: true
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const { data: updatedSession } = await supabase
+        .from('roleplay_sessions')
+        .select('*')
+        .eq('id', currentSession.id)
+        .single();
+
+      if (updatedSession) {
+        const typedSession: RoleplaySession = {
+          id: updatedSession.id,
+          avatar_id: updatedSession.avatar_id,
+          roleplay_type: updatedSession.roleplay_type,
+          scenario_description: updatedSession.scenario_description,
+          status: updatedSession.status as 'in_progress' | 'completed' | 'abandoned',
+          created_at: updatedSession.created_at,
+          updated_at: updatedSession.updated_at,
+          score: updatedSession.score || undefined,
+          feedback: updatedSession.feedback || undefined
+        };
+        
+        setCurrentSession(typedSession);
+
+        toast({
+          title: "Roleplay Analysis Complete",
+          description: `Your score: ${typedSession.score}/100. Check the feedback for detailed insights.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error getting score:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to analyze roleplay",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -289,6 +343,21 @@ const Dashboard = () => {
               </>
             ) : (
               <div className="h-[calc(100vh-8rem)] flex flex-col">
+                {currentSession.score !== undefined && currentSession.feedback && (
+                  <div className="mb-4 p-6 bg-gray-50 rounded-lg">
+                    <h3 className="text-xl font-semibold mb-2">Roleplay Analysis</h3>
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold text-blue-600">
+                        Score: {currentSession.score}/100
+                      </div>
+                    </div>
+                    <div className="prose">
+                      <h4 className="text-lg font-semibold mb-2">Feedback</h4>
+                      <p className="whitespace-pre-wrap">{currentSession.feedback}</p>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg">
                   {messages.map((message) => (
                     <div
@@ -336,6 +405,15 @@ const Dashboard = () => {
                       </>
                     )}
                   </Button>
+                  {messages.length > 0 && !currentSession.score && (
+                    <Button
+                      className="bg-green-600 hover:bg-green-700 text-white px-6"
+                      onClick={requestScoring}
+                      disabled={isLoading}
+                    >
+                      Get Feedback
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
