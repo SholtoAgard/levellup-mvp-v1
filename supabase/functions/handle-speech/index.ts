@@ -7,6 +7,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Process base64 in chunks to prevent memory issues
+function processBase64Chunks(base64String: string, chunkSize = 1024) {
+  const result = new Uint8Array(Math.ceil(base64String.length * 3 / 4));
+  let position = 0;
+  let resultPosition = 0;
+
+  while (position < base64String.length) {
+    const chunk = base64String.slice(position, position + chunkSize);
+    const binaryChunk = atob(chunk);
+    for (let i = 0; i < binaryChunk.length; i++) {
+      result[resultPosition + i] = binaryChunk.charCodeAt(i);
+    }
+    position += chunkSize;
+    resultPosition += binaryChunk.length;
+  }
+
+  return result.slice(0, resultPosition);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -21,12 +40,10 @@ serve(async (req) => {
     }
 
     if (type === 'speech-to-text') {
-      // Process base64 audio data
-      const binaryString = atob(audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
+      console.log('Processing speech to text...');
+      // Process audio data in chunks
+      const bytes = processBase64Chunks(audio);
+      console.log('Audio data processed, creating form data...');
 
       // Create form data for Whisper API
       const formData = new FormData()
@@ -34,6 +51,7 @@ serve(async (req) => {
       formData.append('file', blob, 'audio.webm')
       formData.append('model', 'whisper-1')
 
+      console.log('Sending request to Whisper API...');
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
@@ -42,11 +60,19 @@ serve(async (req) => {
         body: formData,
       })
 
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Whisper API error:', errorData);
+        throw new Error(`Whisper API error: ${errorData}`);
+      }
+
       const data = await response.json()
+      console.log('Speech to text completed successfully');
       return new Response(JSON.stringify({ text: data.text }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     } else if (type === 'text-to-speech') {
+      console.log('Processing text to speech...');
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
@@ -61,8 +87,15 @@ serve(async (req) => {
         }),
       })
 
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Text-to-speech API error:', errorData);
+        throw new Error(`Text-to-speech API error: ${errorData}`);
+      }
+
       const arrayBuffer = await response.arrayBuffer()
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+      console.log('Text to speech completed successfully');
 
       return new Response(
         JSON.stringify({ audioContent: base64Audio }),
@@ -72,6 +105,7 @@ serve(async (req) => {
 
     throw new Error('Invalid type specified')
   } catch (error) {
+    console.error('Error in handle-speech function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
