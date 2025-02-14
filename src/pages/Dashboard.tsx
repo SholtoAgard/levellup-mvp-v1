@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
@@ -401,7 +402,7 @@ const Dashboard = () => {
                     {avatars.map((avatar) => {
                       const avatarPublicUrl = supabase.storage
                         .from('avatars')
-                        .getPublicUrl(`avatars/${avatar.id}.jpg`).data.publicUrl;
+                        .getPublicUrl(`${avatar.id}.jpg`).data.publicUrl;
 
                       return (
                         <div 
