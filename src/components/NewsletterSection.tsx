@@ -1,5 +1,6 @@
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const NewsletterSection = () => {
   return (
@@ -48,14 +49,19 @@ const NewsletterSection = () => {
           <p className="text-lg font-medium text-[#222222] mb-6 text-center">
             + Get a FREE SaaS Cold Call Script that has generated over $50K in commission & bonuses!
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <input
+          <div className="flex flex-col gap-4 max-w-md mx-auto">
+            <Input
+              type="text"
+              placeholder="First Name"
+              className="flex-1"
+            />
+            <Input
               type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF] focus:border-transparent"
+              placeholder="Email Address"
+              className="flex-1"
             />
             <Button 
-              className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+              className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
             >
               Join Newsletter
             </Button>
