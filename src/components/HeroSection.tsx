@@ -35,7 +35,7 @@ const HeroSection = () => {
         <div className="text-center">
           <h2 style={{
           fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        }} className="text-3xl font-bold text-[#222222] md:text-4xl">
+        }} className="text-3xl font-bold text-[#222222] md:text-3xl">
             Practise. Improve. Book More Meetings. Close More Deals.
           </h2>
         </div>
