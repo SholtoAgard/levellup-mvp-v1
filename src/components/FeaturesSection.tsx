@@ -1,27 +1,22 @@
 
-import { Star, Users, Award, ChartBar } from "lucide-react";
+import { Users, MessageSquare, Settings } from "lucide-react";
 
 const FeaturesSection = () => {
   const features = [
     {
-      icon: Star,
-      title: "Smart Role-Playing",
-      description: "Practice with AI that adapts to your style and industry, providing personalized feedback."
+      icon: MessageSquare,
+      title: "Realistic AI Avatars",
+      description: "Talk to lifelike, customizable AI avatars that respond with natural emotions and tones. Feel like you're practicing with real people, helping you stay calm and confident during sales calls."
     },
     {
       icon: Users,
-      title: "Team Analytics",
-      description: "Track progress across your team and identify areas for improvement."
+      title: "Diverse Buyer Personas & Scenarios",
+      description: "Train with different decision-makers across industries. Face real-world objections and challenges, so you're always prepared for any sales conversation."
     },
     {
-      icon: Award,
-      title: "Expert Scenarios",
-      description: "Access hundreds of real-world sales scenarios crafted by industry experts."
-    },
-    {
-      icon: ChartBar,
-      title: "Performance Tracking",
-      description: "Monitor your improvement with detailed analytics and progress reports."
+      icon: Settings,
+      title: "Customizable Training",
+      description: "Create and edit your own sales scenarios to match your company's process. Practice exactly the way you sell."
     }
   ];
 
@@ -37,18 +32,18 @@ const FeaturesSection = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
               <div key={index} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-4">
+                <div className="flex flex-col items-center text-center gap-4">
                   <div className="p-3 bg-blue-50 rounded-lg">
-                    <Icon className="w-6 h-6 text-[#1E90FF]" />
+                    <Icon className="w-8 h-8 text-[#1E90FF]" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-[#222222] mb-2">{feature.title}</h3>
-                    <p className="text-gray-600">{feature.description}</p>
+                    <h3 className="text-xl font-semibold text-[#222222] mb-3">{feature.title}</h3>
+                    <p className="text-gray-600 leading-relaxed">{feature.description}</p>
                   </div>
                 </div>
               </div>
