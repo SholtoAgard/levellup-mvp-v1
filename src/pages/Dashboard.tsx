@@ -6,18 +6,14 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
-import { Mic, StopCircle, Volume2, VolumeX } from "lucide-react";
+import { Mic, StopCircle, Volume2 } from "lucide-react";
 import { useRef } from "react";
 
 const avatars = [
-  { id: "chloe-formal-1", name: "Chloe", style: "Formal 1", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
-  { id: "chloe-formal-2", name: "Chloe", style: "Formal 2", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
-  { id: "noah-casual", name: "Noah", style: "Casual", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
-  { id: "noah-formal-3", name: "Noah", style: "Formal 3", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
-  { id: "noah-formal-2", name: "Noah", style: "Formal 2", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
-  { id: "veronica-formal", name: "Veronica", style: "Formal", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
-  { id: "aliyah-formal", name: "Aliyah", style: "Formal", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
-  { id: "raj-formal-1", name: "Raj", style: "Formal 1", image: "/lovable-uploads/7b00384f-75a0-4304-8793-1f2642d915c7.png" },
+  { id: "chloe", name: "Chloe", style: "SaaS Sales", personality: "Friendly and professional SaaS sales representative" },
+  { id: "noah", name: "Noah", style: "Enterprise", personality: "Experienced enterprise software consultant" },
+  { id: "veronica", name: "Veronica", style: "B2B Sales", personality: "Strategic B2B sales director" },
+  { id: "marcus", name: "Marcus", style: "Technical", personality: "Technical sales engineer" }
 ];
 
 const rolePlayTypes = ["cold call", "discovery call", "product demo"];
@@ -401,22 +397,31 @@ const Dashboard = () => {
               <>
                 <section>
                   <h2 className="text-2xl font-semibold mb-6">Select your avatar:</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                    {avatars.map((avatar) => (
-                      <div 
-                        key={avatar.id}
-                        className={`cursor-pointer text-center ${
-                          selectedAvatar === avatar.id ? 'ring-2 ring-[#1E90FF] rounded-lg' : ''
-                        }`}
-                        onClick={() => setSelectedAvatar(avatar.id)}
-                      >
-                        <Avatar className="w-24 h-24 mx-auto mb-2">
-                          <AvatarImage src={avatar.image} alt={`${avatar.name} ${avatar.style}`} />
-                        </Avatar>
-                        <p className="font-medium">{avatar.name}</p>
-                        <p className="text-sm text-gray-500">{avatar.style}</p>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {avatars.map((avatar) => {
+                      const avatarPublicUrl = supabase.storage
+                        .from('avatars')
+                        .getPublicUrl(`avatars/${avatar.id}.jpg`).data.publicUrl;
+
+                      return (
+                        <div 
+                          key={avatar.id}
+                          className={`cursor-pointer text-center p-4 rounded-lg transition-all ${
+                            selectedAvatar === avatar.id 
+                              ? 'ring-2 ring-[#1E90FF] bg-blue-50' 
+                              : 'hover:bg-gray-50'
+                          }`}
+                          onClick={() => setSelectedAvatar(avatar.id)}
+                        >
+                          <Avatar className="w-32 h-32 mx-auto mb-4 rounded-lg">
+                            <AvatarImage src={avatarPublicUrl} alt={avatar.name} />
+                          </Avatar>
+                          <h3 className="font-semibold text-lg text-gray-900">{avatar.name}</h3>
+                          <p className="text-sm text-gray-500 mb-2">{avatar.style}</p>
+                          <p className="text-xs text-gray-600">{avatar.personality}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
 
