@@ -54,7 +54,7 @@ const Header = () => {
       <Link to="/" className="text-[#222222] hover:text-gray-900 text-base font-medium" onClick={() => setIsOpen(false)}>HOME</Link>
       <button onClick={() => scrollToSection('features')} className="text-[#222222] hover:text-gray-900 text-base font-medium">FEATURES</button>
       <button onClick={() => scrollToSection('pricing')} className="text-[#222222] hover:text-gray-900 text-base font-medium">PRICING</button>
-      <Link to="/newsletter" className="text-[#222222] hover:text-gray-900 text-base font-medium" onClick={() => setIsOpen(false)}>JOIN NEWSLETTER</Link>
+      <button onClick={() => scrollToSection('newsletter')} className="text-[#222222] hover:text-gray-900 text-base font-medium">JOIN NEWSLETTER</button>
       {session ? (
         <>
           <Link to="/dashboard" className="text-[#222222] hover:text-gray-900 text-base font-medium" onClick={() => setIsOpen(false)}>DASHBOARD</Link>
