@@ -19,6 +19,30 @@ interface RoleplayRequest {
   requestScoring?: boolean;
 }
 
+// Define available avatars with their images
+const avatars = {
+  'chloe': {
+    name: 'Chloe',
+    image: 'avatars/chloe.jpg',
+    personality: 'Friendly and professional SaaS sales representative'
+  },
+  'noah': {
+    name: 'Noah',
+    image: 'avatars/noah.jpg',
+    personality: 'Experienced enterprise software consultant'
+  },
+  'veronica': {
+    name: 'Veronica',
+    image: 'avatars/veronica.jpg',
+    personality: 'Strategic B2B sales director'
+  },
+  'marcus': {
+    name: 'Marcus',
+    image: 'avatars/marcus.jpg',
+    personality: 'Technical sales engineer'
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -102,7 +126,8 @@ FEEDBACK: [detailed feedback]`;
     // Handle regular message exchange
     let systemPrompt = "You are an AI sales roleplay partner. ";
     if (context) {
-      systemPrompt += `You are playing the role of a prospect in a ${context.roleplay_type} scenario. ${context.scenario_description}
+      const avatar = avatars[context.avatar_id as keyof typeof avatars];
+      systemPrompt += `You are playing the role of ${avatar.name}, ${avatar.personality}, in a ${context.roleplay_type} scenario. ${context.scenario_description}
       Provide realistic responses, objections, and challenges that a prospect might raise. Be engaging but also challenging.`;
     }
 
@@ -135,7 +160,21 @@ FEEDBACK: [detailed feedback]`;
         ]);
     }
 
-    return new Response(JSON.stringify({ response: aiResponse }), {
+    // Get the public URL for the avatar image
+    let avatarUrl = null;
+    if (context?.avatar_id) {
+      const avatar = avatars[context.avatar_id as keyof typeof avatars];
+      const { data } = await supabaseClient
+        .storage
+        .from('avatars')
+        .getPublicUrl(avatar.image);
+      avatarUrl = data.publicUrl;
+    }
+
+    return new Response(JSON.stringify({ 
+      response: aiResponse,
+      avatar: avatarUrl 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
