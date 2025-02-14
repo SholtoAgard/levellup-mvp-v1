@@ -1,8 +1,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const PricingSection = () => {
+  const navigate = useNavigate();
   const plan = {
     name: "Professional",
     price: "$49 USD",
@@ -49,6 +51,7 @@ const PricingSection = () => {
 
             <Button 
               className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+              onClick={() => navigate('/auth')}
             >
               Try For Free
             </Button>

@@ -1,7 +1,9 @@
 
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   const features = [
     {
       title: "User-Friendly",
@@ -32,6 +34,7 @@ const HeroSection = () => {
             <Button 
               size="lg" 
               className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg px-8 py-6 h-auto rounded-xl"
+              onClick={() => navigate('/auth')}
             >
               Try LevellUp For Free
             </Button>
