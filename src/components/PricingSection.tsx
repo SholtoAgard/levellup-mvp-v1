@@ -5,8 +5,8 @@ import { Check } from "lucide-react";
 const PricingSection = () => {
   const plan = {
     name: "Professional",
-    price: "$49",
-    period: "per month",
+    price: "$49 USD",
+    period: "user/month",
     description: "Ideal for individual sales professionals",
     features: [
       "Unlimited AI role-play sessions",
