@@ -4,10 +4,15 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { Session } from "@supabase/supabase-js";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Header = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -26,12 +31,13 @@ const Header = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
+    setIsOpen(false);
   };
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      const headerOffset = 64; // Height of the fixed header
+      const headerOffset = 64;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -40,7 +46,31 @@ const Header = () => {
         behavior: "smooth"
       });
     }
+    setIsOpen(false);
   };
+
+  const renderNavItems = () => (
+    <>
+      <Link to="/" className="text-[#222222] hover:text-gray-900 text-base font-medium" onClick={() => setIsOpen(false)}>HOME</Link>
+      <button onClick={() => scrollToSection('features')} className="text-[#222222] hover:text-gray-900 text-base font-medium">FEATURES</button>
+      <button onClick={() => scrollToSection('pricing')} className="text-[#222222] hover:text-gray-900 text-base font-medium">PRICING</button>
+      <Link to="/newsletter" className="text-[#222222] hover:text-gray-900 text-base font-medium" onClick={() => setIsOpen(false)}>JOIN NEWSLETTER</Link>
+      {session ? (
+        <>
+          <Link to="/dashboard" className="text-[#222222] hover:text-gray-900 text-base font-medium" onClick={() => setIsOpen(false)}>DASHBOARD</Link>
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className="text-[#222222] hover:text-gray-900 text-base font-medium"
+          >
+            LOG OUT
+          </Button>
+        </>
+      ) : (
+        <Link to="/auth" className="text-[#222222] hover:text-gray-900 text-base font-medium" onClick={() => setIsOpen(false)}>LOG IN</Link>
+      )}
+    </>
+  );
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white z-50 border-b border-gray-100">
@@ -51,32 +81,34 @@ const Header = () => {
             <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>LevellUp</span>
           </Link>
 
-          {/* Navigation */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-[#222222] hover:text-gray-900 text-base font-medium">HOME</Link>
-            <button onClick={() => scrollToSection('features')} className="text-[#222222] hover:text-gray-900 text-base font-medium">FEATURES</button>
-            <button onClick={() => scrollToSection('pricing')} className="text-[#222222] hover:text-gray-900 text-base font-medium">PRICING</button>
-            <Link to="/newsletter" className="text-[#222222] hover:text-gray-900 text-base font-medium">JOIN NEWSLETTER</Link>
-            {session ? (
-              <>
-                <Link to="/dashboard" className="text-[#222222] hover:text-gray-900 text-base font-medium">DASHBOARD</Link>
-                <Button
-                  variant="ghost"
-                  onClick={handleLogout}
-                  className="text-[#222222] hover:text-gray-900 text-base font-medium"
-                >
-                  LOG OUT
-                </Button>
-              </>
-            ) : (
-              <Link to="/auth" className="text-[#222222] hover:text-gray-900 text-base font-medium">LOG IN</Link>
-            )}
+            {renderNavItems()}
           </nav>
+
+          {/* Mobile Navigation */}
+          {isMobile && (
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <nav className="flex flex-col gap-6 mt-6">
+                  {renderNavItems()}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          )}
 
           {/* CTA Button */}
           <Button 
             className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white rounded-lg px-6 py-2 text-base font-medium"
-            onClick={() => navigate(session ? "/dashboard" : "/auth")}
+            onClick={() => {
+              navigate(session ? "/dashboard" : "/auth");
+              setIsOpen(false);
+            }}
           >
             FREE TRIAL
           </Button>
