@@ -51,7 +51,7 @@ const PricingSection = () => {
 
             <Button 
               className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/subscription')}
             >
               Try For Free
             </Button>

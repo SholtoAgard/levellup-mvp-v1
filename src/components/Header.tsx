@@ -131,7 +131,7 @@ const Header = () => {
           <Button 
             className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white rounded-lg px-6 py-2 text-base font-medium"
             onClick={() => {
-              navigate(session ? "/dashboard" : "/auth");
+              navigate(session ? "/dashboard" : "/subscription");
               setIsOpen(false);
             }}
           >
