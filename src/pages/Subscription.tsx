@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
@@ -12,8 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 
-// Initialize Stripe
-const stripePromise = loadStripe("pk_test_XXXXX"); // Replace with your Stripe publishable key
+// Initialize Stripe with test publishable key
+const stripePromise = loadStripe("pk_test_51HA5oHHYcRfijJBsAxDzfvHf4LhhKoQputSDEU0rQcBTQvYWQi9ci76CAxSVIcRMjYDuzshvbK0qcxl8gSYnrXIc00axV69scf");
 
 const CheckoutForm = () => {
   const stripe = useStripe();

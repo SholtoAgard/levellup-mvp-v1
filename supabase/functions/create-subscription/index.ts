@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     // Create a subscription with a trial period
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [{ price: 'price_XXXXX' }], // Replace with your actual price ID from Stripe
+      items: [{ price: 'price_1QsYdjHYcRfijJBsdznMm16k' }], // Updated with the correct price ID
       trial_period_days: 4,
       payment_settings: {
         payment_method_types: ['card'],
