@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { HomeIcon, Users, BarChart2, Settings, HelpCircle, User, Send, Mic, StopCircle, Volume2 } from "lucide-react";
+import { HomeIcon, Users, HelpCircle, User, Send, Mic, StopCircle, Volume2 } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -444,25 +444,7 @@ const Dashboard = () => {
                   <SidebarMenuItem>
                     <SidebarMenuButton className="w-full">
                       <Users className="w-5 h-5" />
-                      <span>Role plays</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full">
-                      <Users className="w-5 h-5" />
                       <span>AI Avatars</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full">
-                      <BarChart2 className="w-5 h-5" />
-                      <span>Analytics</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full">
-                      <Settings className="w-5 h-5" />
-                      <span>Settings</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
