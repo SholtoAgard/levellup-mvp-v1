@@ -73,12 +73,13 @@ const ThankYou = () => {
         <img 
           src={photoUrl || '/placeholder.svg'} 
           alt="Profile" 
-          className="w-32 h-32 rounded-full mx-auto mb-8 object-cover bg-gray-100"
+          className="w-32 h-32 rounded-full mx-auto mb-4 object-cover bg-gray-100"
           onError={(e) => {
             console.error('Error loading image:', e);
             e.currentTarget.src = '/placeholder.svg';
           }}
         />
+        <p className="text-lg font-medium text-gray-700 mb-8">Ian Agard, founder of LevellUp</p>
         <h1 className="text-3xl md:text-4xl font-bold text-[#222222] mb-8">
           Thank you for subscribing to my newsletter!
         </h1>
