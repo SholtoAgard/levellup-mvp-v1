@@ -69,7 +69,7 @@ const ThankYou = () => {
           Thank you for subscribing to my newsletter!
         </h1>
         
-        <Button className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg py-6 px-8 mb-12" onClick={() => window.open("https://docs.google.com/document/d/1jMLzuxKaRcTB1qLulwOFYu_YmOyECmerFGkqW-r_ooQ/edit?tab=t.0", "_blank")}>Download $50K SaaS Cold Call Script</Button>
+        <Button className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg py-6 px-8 mb-12" onClick={() => window.open("https://docs.google.com/document/d/1jMLzuxKaRcTB1qLulwOFYu_YmOyECmerFGkqW-r_ooQ/edit?tab=t.0", "_blank")}>Download Cold Call Script</Button>
 
         <div className="space-y-6 text-left max-w-2xl mx-auto">
           <p className="text-xl text-gray-700">Here's the thing.</p>
