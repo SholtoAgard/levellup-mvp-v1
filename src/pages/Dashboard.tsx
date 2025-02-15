@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
@@ -17,7 +16,7 @@ const avatars = [
   { id: "marcus", name: "Marcus", style: "Technical", personality: "Technical sales engineer" }
 ];
 
-const rolePlayTypes = ["cold call", "discovery call", "product demo"];
+const rolePlayTypes = ["cold call", "discovery call"];
 
 const Dashboard = () => {
   const { toast } = useToast();
