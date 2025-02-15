@@ -167,7 +167,7 @@ const CheckoutForm = () => {
         disabled={!stripe || loading}
         className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90"
       >
-        {loading ? "Processing..." : "Add Payment Method"}
+        {loading ? "Processing..." : "Start Your 4-Day Free Trial"}
       </Button>
     </form>
   );
