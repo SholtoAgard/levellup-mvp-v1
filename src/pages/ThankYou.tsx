@@ -80,7 +80,7 @@ const ThankYou = () => {
           }}
         />
         <h1 className="text-3xl md:text-4xl font-bold text-[#222222] mb-8">
-          Thank you for subscribing to my newsletter, {firstName}!
+          Thank you for subscribing to my newsletter!
         </h1>
         
         <Button 
