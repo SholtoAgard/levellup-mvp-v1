@@ -1,8 +1,22 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 
 const NewsletterSection = () => {
+  const [firstName, setFirstName] = useState("");
+  const [email, setEmail] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Store the form data in localStorage to access it on the thank you page
+    localStorage.setItem("newsletter_firstName", firstName);
+    localStorage.setItem("newsletter_email", email);
+    navigate("/thank-you");
+  };
+
   return (
     <section id="newsletter" className="py-20 bg-gray-50">
       <div className="max-w-4xl mx-auto px-4">
@@ -45,7 +59,7 @@ const NewsletterSection = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
           <p className="text-lg font-medium text-[#222222] mb-6 text-center">
             + Get a FREE SaaS Cold Call Script that has generated over $50K in commission & bonuses!
           </p>
@@ -54,19 +68,26 @@ const NewsletterSection = () => {
               type="text"
               placeholder="First Name"
               className="flex-1"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
             />
             <Input
               type="email"
               placeholder="Email Address"
               className="flex-1"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
             <Button 
+              type="submit"
               className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
             >
               Join Newsletter
             </Button>
           </div>
-        </div>
+        </form>
       </div>
     </section>
   );
