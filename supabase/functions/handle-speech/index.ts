@@ -50,6 +50,8 @@ serve(async (req) => {
         throw new Error('Text and voiceId are required for text-to-speech');
       }
 
+      console.log('Making text-to-speech request with:', { text, voiceId });
+
       const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
         method: 'POST',
         headers: {
@@ -68,7 +70,9 @@ serve(async (req) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate speech');
+        const errorText = await response.text();
+        console.error('ElevenLabs API error:', errorText);
+        throw new Error('Failed to generate speech: ' + errorText);
       }
 
       const arrayBuffer = await response.arrayBuffer();

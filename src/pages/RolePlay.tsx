@@ -166,7 +166,11 @@ const RolePlay = () => {
     try {
       setIsSpeaking(true);
       const { data, error } = await supabase.functions.invoke('handle-speech', {
-        body: { audio: text, type: 'text-to-speech' }
+        body: { 
+          text, 
+          type: 'text-to-speech',
+          voiceId: session?.avatar_voice_id // Add the voice ID from the session
+        }
       });
 
       if (error) throw error;
