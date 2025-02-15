@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { PricingSection } from "@/components/PricingSection";
 
 const ThankYou = () => {
   const [firstName, setFirstName] = useState("");
@@ -110,12 +111,7 @@ const ThankYou = () => {
             But the truth is… I know you're here because you want more from your sales career.
           </p>
 
-          <Button 
-            className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg py-6"
-            onClick={() => navigate("/subscription")}
-          >
-            Get started today. Try LevellUp free for 4 days. Cancel anytime.
-          </Button>
+          <PricingSection />
         </div>
       </div>
     </div>
