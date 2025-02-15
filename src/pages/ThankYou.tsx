@@ -2,9 +2,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const ThankYou = () => {
   const [firstName, setFirstName] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [scriptUrl, setScriptUrl] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -12,13 +15,32 @@ const ThankYou = () => {
     if (storedName) {
       setFirstName(storedName);
     }
+
+    // Get the public URLs for the assets
+    const getAssetUrls = async () => {
+      const photoPath = 'profile-photo.jpg';
+      const scriptPath = 'cold-call-script.pdf';
+      
+      const { data: photoData } = await supabase.storage
+        .from('assets')
+        .getPublicUrl(photoPath);
+      
+      const { data: scriptData } = await supabase.storage
+        .from('assets')
+        .getPublicUrl(scriptPath);
+
+      if (photoData) setPhotoUrl(photoData.publicUrl);
+      if (scriptData) setScriptUrl(scriptData.publicUrl);
+    };
+
+    getAssetUrls();
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 py-16 px-4">
       <div className="max-w-3xl mx-auto text-center">
         <img 
-          src="/your-photo.jpg" 
+          src={photoUrl || '/placeholder.svg'} 
           alt="Your Name" 
           className="w-32 h-32 rounded-full mx-auto mb-8 object-cover"
         />
@@ -28,7 +50,7 @@ const ThankYou = () => {
         
         <Button 
           className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg py-6 px-8 mb-12"
-          onClick={() => window.open("/path-to-script.pdf", "_blank")}
+          onClick={() => scriptUrl && window.open(scriptUrl, "_blank")}
         >
           Download your $50K SaaS Cold Call Script
         </Button>
