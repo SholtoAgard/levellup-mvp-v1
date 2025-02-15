@@ -86,7 +86,7 @@ const ThankYou = () => {
         
         <Button 
           className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg py-6 px-8 mb-12"
-          onClick={() => scriptUrl && window.open(scriptUrl, "_blank")}
+          onClick={() => window.open("https://docs.google.com/document/d/1jMLzuxKaRcTB1qLulwOFYu_YmOyECmerFGkqW-r_ooQ/edit?tab=t.0", "_blank")}
         >
           Download your $50K SaaS Cold Call Script
         </Button>
