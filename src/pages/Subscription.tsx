@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
@@ -68,21 +67,6 @@ const CheckoutForm = () => {
     try {
       setLoading(true);
 
-      // Check if user already exists
-      const { data: { user: existingUser } } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (existingUser) {
-        toast({
-          title: "Account exists",
-          description: "Please log in to your existing account instead.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Sign up the user
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -90,28 +74,34 @@ const CheckoutForm = () => {
       });
 
       if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          toast({
-            title: "Account exists",
-            description: "Please log in to your existing account instead.",
-            variant: "destructive",
-          });
-          return;
-        }
+        console.error('Signup error:', signUpError);
         throw signUpError;
       }
 
-      if (!user) throw new Error("Failed to create account");
+      if (!user?.id) {
+        throw new Error("Failed to create account - no user ID received");
+      }
+
+      console.log('User created successfully:', user.id);
 
       // Create subscription
-      const { error: subscriptionError } = await supabase.functions.invoke('create-subscription', {
-        body: { paymentMethodId: paymentMethod, userId: user.id },
+      const { data: subscriptionData, error: subscriptionError } = await supabase.functions.invoke('create-subscription', {
+        body: { 
+          paymentMethodId: paymentMethod, 
+          userId: user.id 
+        }
       });
 
       if (subscriptionError) {
         console.error('Subscription error:', subscriptionError);
         throw new Error(subscriptionError.message || 'Failed to set up subscription');
       }
+
+      if (!subscriptionData) {
+        throw new Error('No subscription data received');
+      }
+
+      console.log('Subscription created successfully:', subscriptionData);
 
       toast({
         title: "Success!",
@@ -126,6 +116,15 @@ const CheckoutForm = () => {
         description: error.message || "Failed to create your account. Please try again.",
         variant: "destructive",
       });
+
+      // If the error indicates the user already exists, show a specific message
+      if (error.message?.toLowerCase().includes('already registered')) {
+        toast({
+          title: "Account exists",
+          description: "Please log in to your existing account instead.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
