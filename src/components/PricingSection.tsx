@@ -15,7 +15,7 @@ const PricingSection = () => {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-[#222222] mb-4" style={{
           fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        }}>Get started in minutes. Try LevellUp free for 4 days. Cancel anytime.</h2>
+        }}>Get started today. Try LevellUp free for 4 days. Cancel anytime.</h2>
         </div>
 
         <div className="max-w-md mx-auto">
