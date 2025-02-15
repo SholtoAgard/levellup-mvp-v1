@@ -68,13 +68,39 @@ const CheckoutForm = () => {
     try {
       setLoading(true);
 
+      // Check if user already exists
+      const { data: { user: existingUser } } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (existingUser) {
+        toast({
+          title: "Account exists",
+          description: "Please log in to your existing account instead.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Sign up the user
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          toast({
+            title: "Account exists",
+            description: "Please log in to your existing account instead.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw signUpError;
+      }
+
       if (!user) throw new Error("Failed to create account");
 
       // Create subscription
@@ -82,7 +108,10 @@ const CheckoutForm = () => {
         body: { paymentMethodId: paymentMethod, userId: user.id },
       });
 
-      if (subscriptionError) throw subscriptionError;
+      if (subscriptionError) {
+        console.error('Subscription error:', subscriptionError);
+        throw new Error(subscriptionError.message || 'Failed to set up subscription');
+      }
 
       toast({
         title: "Success!",
