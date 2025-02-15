@@ -75,8 +75,17 @@ serve(async (req) => {
         throw new Error('Failed to generate speech: ' + errorText);
       }
 
+      // Use chunks to handle large audio files
       const arrayBuffer = await response.arrayBuffer();
-      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const bytes = new Uint8Array(arrayBuffer);
+      const chunks = [];
+      const chunkSize = 8192;  // Process data in smaller chunks
+      
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        chunks.push(String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize)));
+      }
+      
+      const base64Audio = btoa(chunks.join(''));
 
       return new Response(
         JSON.stringify({ audioContent: base64Audio }),

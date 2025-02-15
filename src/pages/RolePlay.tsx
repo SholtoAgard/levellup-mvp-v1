@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -169,18 +170,22 @@ const RolePlay = () => {
         body: { 
           text, 
           type: 'text-to-speech',
-          voiceId: session?.avatar_voice_id // Add the voice ID from the session
+          voiceId: session?.avatar_voice_id
         }
       });
 
       if (error) throw error;
 
       if (data.audioContent) {
+        // Process audio in chunks
         const binaryString = atob(data.audioContent);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        
+        for (let i = 0; i < len; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
+        
         const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
         const audioUrl = URL.createObjectURL(audioBlob);
         
