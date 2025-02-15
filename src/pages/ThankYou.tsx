@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { PricingSection } from "@/components/PricingSection";
+import PricingSection from "@/components/PricingSection";
 
 const ThankYou = () => {
   const [firstName, setFirstName] = useState("");
