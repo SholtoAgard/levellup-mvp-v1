@@ -17,12 +17,22 @@ Deno.serve(async (req) => {
     
     // Get the request body
     const { paymentMethodId, userId } = await req.json()
+    console.log('Received request:', { paymentMethodId, userId })
 
     // Get user's email from auth.users
     const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId)
-    if (userError || !user) throw new Error('User not found')
+    if (userError) {
+      console.error('User fetch error:', userError)
+      throw userError
+    }
+    if (!user) {
+      console.error('User not found for ID:', userId)
+      throw new Error('User not found')
+    }
+    console.log('Found user:', { email: user.email })
 
     // Create a customer in Stripe
+    console.log('Creating Stripe customer...')
     const customer = await stripe.customers.create({
       email: user.email,
       payment_method: paymentMethodId,
@@ -30,20 +40,32 @@ Deno.serve(async (req) => {
         default_payment_method: paymentMethodId,
       },
     })
+    console.log('Created Stripe customer:', customer.id)
 
     // Create a subscription with a trial period
+    console.log('Creating Stripe subscription...')
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [{ price: 'price_1QsYdjHYcRfijJBsdznMm16k' }], // Updated with the correct price ID
+      items: [
+        { 
+          price: 'price_1OymKQHYcRfijJBsKTfxmhD7' // Monthly subscription price ID
+        }
+      ],
       trial_period_days: 4,
       payment_settings: {
         payment_method_types: ['card'],
         save_default_payment_method: 'on_subscription',
       },
     })
+    console.log('Created subscription:', subscription.id)
 
     // Update user's profile with trial information
     const trialEnd = new Date(subscription.trial_end * 1000)
+    console.log('Updating user profile with trial info:', {
+      trial_started_at: new Date().toISOString(),
+      trial_ends_at: trialEnd.toISOString(),
+    })
+
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
@@ -53,8 +75,12 @@ Deno.serve(async (req) => {
       })
       .eq('id', userId)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('Profile update error:', updateError)
+      throw updateError
+    }
 
+    console.log('Successfully completed subscription setup')
     return new Response(
       JSON.stringify({
         subscription,
@@ -66,8 +92,12 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error in create-subscription:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.raw ? error.raw : undefined
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
