@@ -7,6 +7,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+// Fetch this from environment variable instead of hardcoding
+const STRIPE_PRICE_ID = Deno.env.get('STRIPE_PRICE_ID')!
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -24,6 +27,14 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: paymentMethodId or userId' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    if (!STRIPE_PRICE_ID) {
+      console.error('Missing STRIPE_PRICE_ID environment variable')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Missing price ID' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
@@ -94,7 +105,7 @@ Deno.serve(async (req) => {
     try {
       subscription = await stripe.subscriptions.create({
         customer: customer.id,
-        items: [{ price: 'price_1OymKQHYcRfijJBsKTfxmhD7' }],
+        items: [{ price: STRIPE_PRICE_ID }],
         trial_period_days: 4,
         payment_settings: {
           payment_method_types: ['card'],
