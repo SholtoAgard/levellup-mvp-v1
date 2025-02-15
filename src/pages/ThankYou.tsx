@@ -21,6 +21,8 @@ const ThankYou = () => {
       const photoPath = 'profile-photo.jpg';
       const scriptPath = 'cold-call-script.pdf';
       
+      console.log('Fetching assets from Supabase...');
+      
       const { data: photoData } = await supabase.storage
         .from('assets')
         .getPublicUrl(photoPath);
@@ -28,6 +30,9 @@ const ThankYou = () => {
       const { data: scriptData } = await supabase.storage
         .from('assets')
         .getPublicUrl(scriptPath);
+
+      console.log('Photo URL:', photoData?.publicUrl);
+      console.log('Script URL:', scriptData?.publicUrl);
 
       if (photoData) setPhotoUrl(photoData.publicUrl);
       if (scriptData) setScriptUrl(scriptData.publicUrl);
@@ -43,6 +48,10 @@ const ThankYou = () => {
           src={photoUrl || '/placeholder.svg'} 
           alt="Your Name" 
           className="w-32 h-32 rounded-full mx-auto mb-8 object-cover"
+          onError={(e) => {
+            console.error('Error loading image:', e);
+            e.currentTarget.src = '/placeholder.svg';
+          }}
         />
         <h1 className="text-3xl md:text-4xl font-bold text-[#222222] mb-8">
           Thank you for subscribing to my newsletter, {firstName}!
