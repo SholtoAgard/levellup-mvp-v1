@@ -19,12 +19,20 @@ Deno.serve(async (req) => {
     const { paymentMethodId, userId } = await req.json()
     console.log('Received request:', { paymentMethodId, userId })
 
+    if (!paymentMethodId || !userId) {
+      console.error('Missing required fields:', { paymentMethodId, userId })
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: paymentMethodId or userId' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
     // Get user's email from auth.users
     const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId)
     if (userError) {
       console.error('User fetch error:', userError)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch user details' }),
+        JSON.stringify({ error: 'Failed to fetch user details', details: userError }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
@@ -40,55 +48,77 @@ Deno.serve(async (req) => {
     // Check if user already has an active subscription
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('is_trial_used, trial_ends_at')
+      .select('is_trial_used, trial_ends_at, stripe_customer_id')
       .eq('id', userId)
       .single()
 
     if (profileError) {
       console.error('Profile fetch error:', profileError)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch user profile' }),
+        JSON.stringify({ error: 'Failed to fetch user profile', details: profileError }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    if (profile?.is_trial_used) {
-      console.error('User has already used their trial')
+    if (profile?.stripe_customer_id) {
+      console.error('User already has a Stripe customer ID:', profile.stripe_customer_id)
       return new Response(
-        JSON.stringify({ error: 'Trial has already been used for this account' }),
+        JSON.stringify({ error: 'User already has an active subscription' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
     // Create a customer in Stripe
     console.log('Creating Stripe customer...')
-    const customer = await stripe.customers.create({
-      email: user.email,
-      payment_method: paymentMethodId,
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
-    })
-    console.log('Created Stripe customer:', customer.id)
+    let customer;
+    try {
+      customer = await stripe.customers.create({
+        email: user.email,
+        payment_method: paymentMethodId,
+        invoice_settings: {
+          default_payment_method: paymentMethodId,
+        },
+      })
+      console.log('Created Stripe customer:', customer.id)
+    } catch (stripeError) {
+      console.error('Stripe customer creation error:', stripeError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create Stripe customer', details: stripeError }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
 
     // Create a subscription with a trial period
     console.log('Creating Stripe subscription...')
-    const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [{ price: 'price_1OymKQHYcRfijJBsKTfxmhD7' }], // Monthly subscription price ID
-      trial_period_days: 4,
-      payment_settings: {
-        payment_method_types: ['card'],
-        save_default_payment_method: 'on_subscription',
-      },
-    })
-    console.log('Created subscription:', subscription.id)
+    let subscription;
+    try {
+      subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{ price: 'price_1OymKQHYcRfijJBsKTfxmhD7' }],
+        trial_period_days: 4,
+        payment_settings: {
+          payment_method_types: ['card'],
+          save_default_payment_method: 'on_subscription',
+        },
+      })
+      console.log('Created subscription:', subscription.id)
+    } catch (stripeError) {
+      console.error('Stripe subscription creation error:', stripeError)
+      // Clean up the customer if subscription creation fails
+      await stripe.customers.del(customer.id)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create subscription', details: stripeError }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
 
     // Update user's profile with trial information
     const trialEnd = new Date(subscription.trial_end * 1000)
     console.log('Updating user profile with trial info:', {
       trial_started_at: new Date().toISOString(),
       trial_ends_at: trialEnd.toISOString(),
+      stripe_customer_id: customer.id,
+      stripe_subscription_id: subscription.id,
     })
 
     const { error: updateError } = await supabase
@@ -109,7 +139,7 @@ Deno.serve(async (req) => {
       await stripe.customers.del(customer.id)
       
       return new Response(
-        JSON.stringify({ error: 'Failed to update user profile' }),
+        JSON.stringify({ error: 'Failed to update user profile', details: updateError }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
@@ -126,15 +156,16 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error in create-subscription:', error)
+    console.error('Unexpected error in create-subscription:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: error.raw ? error.raw : undefined
+        error: 'Unexpected error occurred',
+        message: error.message,
+        details: error.raw ? error.raw : error
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
       }
     )
   }

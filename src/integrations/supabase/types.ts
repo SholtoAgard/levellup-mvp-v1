@@ -14,6 +14,8 @@ export type Database = {
           created_at: string | null
           id: string
           is_trial_used: boolean | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           trial_ends_at: string | null
           trial_started_at: string | null
           updated_at: string | null
@@ -22,6 +24,8 @@ export type Database = {
           created_at?: string | null
           id: string
           is_trial_used?: boolean | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           trial_ends_at?: string | null
           trial_started_at?: string | null
           updated_at?: string | null
@@ -30,6 +34,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_trial_used?: boolean | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           trial_ends_at?: string | null
           trial_started_at?: string | null
           updated_at?: string | null
