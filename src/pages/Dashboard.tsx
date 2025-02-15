@@ -488,7 +488,7 @@ const Dashboard = () => {
             {!currentSession ? (
               <>
                 <section>
-                  <h2 className="text-2xl font-semibold mb-6">Select your avatar:</h2>
+                  <h2 className="text-2xl font-semibold mb-6">Select an AI Avatar:</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {avatars.map((avatar) => {
                       const avatarPublicUrl = supabase.storage
