@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
 import { HomeIcon, Users, HelpCircle, User, Send, Mic, StopCircle, Volume2 } from "lucide-react";
@@ -41,6 +42,7 @@ const avatars = [
 const rolePlayTypes = ["cold call", "discovery call"];
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedAvatar, setSelectedAvatar] = useState("");
   const [selectedRolePlay, setSelectedRolePlay] = useState("");
@@ -153,7 +155,7 @@ const Dashboard = () => {
         feedback: session.feedback || undefined
       };
       
-      setCurrentSession(typedSession);
+      navigate('/roleplay', { state: { session: typedSession } });
       toast({
         title: "Roleplay Started",
         description: "You can now begin your conversation with the AI.",

@@ -10,6 +10,7 @@ import { Session } from "@supabase/supabase-js";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
+import RolePlay from "./pages/RolePlay";
 import Auth from "./pages/Auth";
 import Subscription from "./pages/Subscription";
 import ThankYou from "./pages/ThankYou";
@@ -62,6 +63,14 @@ const App = () => (
             element={
               <PrivateRoute>
                 <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/roleplay"
+            element={
+              <PrivateRoute>
+                <RolePlay />
               </PrivateRoute>
             }
           />
