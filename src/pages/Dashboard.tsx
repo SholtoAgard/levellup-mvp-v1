@@ -1,19 +1,43 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { HomeIcon, Users, BarChart2, Settings, HelpCircle, User, Send } from "lucide-react";
+import { HomeIcon, Users, BarChart2, Settings, HelpCircle, User, Send, Mic, StopCircle, Volume2 } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
-import { Mic, StopCircle, Volume2 } from "lucide-react";
 import { useRef } from "react";
 
 const avatars = [
-  { id: "chloe", name: "Chloe", style: "SaaS Sales", personality: "Friendly and professional SaaS sales representative" },
-  { id: "noah", name: "Noah", style: "Enterprise", personality: "Experienced enterprise software consultant" },
-  { id: "veronica", name: "Veronica", style: "B2B Sales", personality: "Strategic B2B sales director" },
-  { id: "marcus", name: "Marcus", style: "Technical", personality: "Technical sales engineer" }
+  { 
+    id: "chloe", 
+    name: "Chloe", 
+    style: "SaaS Sales", 
+    personality: "Friendly and professional SaaS sales representative",
+    voiceId: "EXAVITQu4vr4xnSDxMaL" // Sarah voice
+  },
+  { 
+    id: "noah", 
+    name: "Noah", 
+    style: "Enterprise", 
+    personality: "Experienced enterprise software consultant",
+    voiceId: "TX3LPaxmHKxFdv7VOQHJ" // Liam voice
+  },
+  { 
+    id: "veronica", 
+    name: "Veronica", 
+    style: "B2B Sales", 
+    personality: "Strategic B2B sales director",
+    voiceId: "pFZP5JQG7iQjIQuC4Bku" // Lily voice
+  },
+  { 
+    id: "marcus", 
+    name: "Marcus", 
+    style: "Technical", 
+    personality: "Technical sales engineer",
+    voiceId: "CwhRBWXzGAHq8TQ4Fs17" // Roger voice
+  }
 ];
 
 const rolePlayTypes = ["cold call", "discovery call"];
@@ -90,11 +114,14 @@ const Dashboard = () => {
       return;
     }
 
+    const selectedAvatarData = avatars.find(avatar => avatar.id === selectedAvatar);
+    
     const { data: session, error } = await supabase
       .from('roleplay_sessions')
       .insert({
         user_id: userId,
         avatar_id: selectedAvatar,
+        avatar_voice_id: selectedAvatarData?.voiceId,
         roleplay_type: selectedRolePlay,
         scenario_description: rolePlayDescription,
         status: 'in_progress' as const
@@ -115,6 +142,7 @@ const Dashboard = () => {
       const typedSession: RoleplaySession = {
         id: session.id,
         avatar_id: session.avatar_id,
+        avatar_voice_id: session.avatar_voice_id,
         roleplay_type: session.roleplay_type,
         scenario_description: session.scenario_description,
         status: session.status as 'in_progress' | 'completed' | 'abandoned',
@@ -480,82 +508,123 @@ const Dashboard = () => {
                   </div>
                 )}
                 
-                <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[80%] p-4 rounded-lg ${
-                          message.role === 'user'
-                            ? 'bg-[#1E90FF] text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        } relative group`}
-                      >
-                        {message.content}
-                        {message.role === 'ai' && (
-                          <Button
-                            className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                            variant="secondary"
-                            size="icon"
-                            onClick={() => speakText(message.content)}
-                          >
-                            <Volume2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex gap-4">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                  />
-                  <Button
-                    className={`${isRecording ? 'bg-red-500' : 'bg-blue-500'} hover:bg-opacity-90 text-white`}
-                    onClick={isRecording ? stopRecording : startRecording}
-                  >
-                    {isRecording ? (
-                      <StopCircle className="w-5 h-5" />
-                    ) : (
-                      <Mic className="w-5 h-5" />
-                    )}
-                  </Button>
-                  <Button
-                    className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white px-6"
-                    onClick={() => sendMessage()}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      "Sending..."
-                    ) : (
+                <div className="flex-1 flex">
+                  {/* Avatar Section */}
+                  <div className="w-1/3 p-4 flex flex-col items-center">
+                    {currentSession.avatar_id && (
                       <>
-                        <Send className="w-5 h-5 mr-2" />
-                        Send
+                        <div className="relative w-64 h-64 mb-4">
+                          <Avatar className="w-full h-full rounded-lg">
+                            <AvatarImage 
+                              src={supabase.storage
+                                .from('avatars')
+                                .getPublicUrl(`${currentSession.avatar_id}.jpg`).data.publicUrl} 
+                              alt={avatars.find(a => a.id === currentSession.avatar_id)?.name} 
+                            />
+                          </Avatar>
+                          {isRecording && (
+                            <div className="absolute bottom-4 right-4 w-4 h-4">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+                            </div>
+                          )}
+                          {isSpeaking && (
+                            <div className="absolute bottom-4 right-4 w-4 h-4">
+                              <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500"></span>
+                            </div>
+                          )}
+                        </div>
+                        <h2 className="text-xl font-semibold mb-2">
+                          {avatars.find(a => a.id === currentSession.avatar_id)?.name}
+                        </h2>
+                        <p className="text-sm text-gray-600 text-center mb-4">
+                          {avatars.find(a => a.id === currentSession.avatar_id)?.personality}
+                        </p>
                       </>
                     )}
-                  </Button>
-                  {messages.length > 0 && !currentSession.score && (
-                    <Button
-                      className="bg-green-600 hover:bg-green-700 text-white px-6"
-                      onClick={requestScoring}
-                      disabled={isLoading}
-                    >
-                      Get Feedback
-                    </Button>
-                  )}
+                  </div>
+
+                  {/* Chat Section */}
+                  <div className="w-2/3 flex flex-col">
+                    <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg">
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[80%] p-4 rounded-lg ${
+                              message.role === 'user'
+                                ? 'bg-[#1E90FF] text-white'
+                                : 'bg-gray-100 text-gray-900'
+                            } relative group`}
+                          >
+                            {message.content}
+                            {message.role === 'ai' && (
+                              <Button
+                                className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                                variant="secondary"
+                                size="icon"
+                                onClick={() => speakText(message.content)}
+                              >
+                                <Volume2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-4">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type your message..."
+                        className="flex-1 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                          }
+                        }}
+                      />
+                      <Button
+                        className={`${isRecording ? 'bg-red-500' : 'bg-blue-500'} hover:bg-opacity-90 text-white`}
+                        onClick={isRecording ? stopRecording : startRecording}
+                      >
+                        {isRecording ? (
+                          <StopCircle className="w-5 h-5" />
+                        ) : (
+                          <Mic className="w-5 h-5" />
+                        )}
+                      </Button>
+                      <Button
+                        className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white px-6"
+                        onClick={() => sendMessage()}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          "Sending..."
+                        ) : (
+                          <>
+                            <Send className="w-5 h-5 mr-2" />
+                            Send
+                          </>
+                        )}
+                      </Button>
+                      {messages.length > 0 && !currentSession.score && (
+                        <Button
+                          className="bg-green-600 hover:bg-green-700 text-white px-6"
+                          onClick={requestScoring}
+                          disabled={isLoading}
+                        >
+                          Get Feedback
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

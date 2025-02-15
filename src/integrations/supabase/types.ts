@@ -71,6 +71,7 @@ export type Database = {
       roleplay_sessions: {
         Row: {
           avatar_id: string
+          avatar_voice_id: string | null
           created_at: string
           feedback: string | null
           id: string
@@ -83,6 +84,7 @@ export type Database = {
         }
         Insert: {
           avatar_id: string
+          avatar_voice_id?: string | null
           created_at?: string
           feedback?: string | null
           id?: string
@@ -95,6 +97,7 @@ export type Database = {
         }
         Update: {
           avatar_id?: string
+          avatar_voice_id?: string | null
           created_at?: string
           feedback?: string | null
           id?: string
