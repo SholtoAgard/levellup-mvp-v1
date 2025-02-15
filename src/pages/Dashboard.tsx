@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
 import { HomeIcon, Users, BarChart2, Settings, HelpCircle, User, Send, Mic, StopCircle, Volume2 } from "lucide-react";
@@ -7,7 +6,6 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
-import { useRef } from "react";
 
 const avatars = [
   { 
@@ -55,6 +53,9 @@ const Dashboard = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const [isDescriptionRecording, setIsDescriptionRecording] = useState(false);
+  const descriptionMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const descriptionChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     if (currentSession) {
@@ -317,6 +318,69 @@ const Dashboard = () => {
     }
   };
 
+  const startDescriptionRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm',
+      });
+      descriptionMediaRecorderRef.current = mediaRecorder;
+      descriptionChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          descriptionChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(descriptionChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result?.toString().split(',')[1];
+          if (base64Audio) {
+            try {
+              const { data, error } = await supabase.functions.invoke('handle-speech', {
+                body: { audio: base64Audio, type: 'speech-to-text' }
+              });
+
+              if (error) throw error;
+              if (data.text) {
+                setRolePlayDescription(data.text);
+              }
+            } catch (error) {
+              console.error('Error converting speech to text:', error);
+              toast({
+                title: "Error",
+                description: "Failed to convert speech to text",
+                variant: "destructive",
+              });
+            }
+          }
+        };
+      };
+
+      mediaRecorder.start();
+      setIsDescriptionRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      toast({
+        title: "Error",
+        description: "Failed to access microphone",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopDescriptionRecording = () => {
+    if (descriptionMediaRecorderRef.current && isDescriptionRecording) {
+      descriptionMediaRecorderRef.current.stop();
+      descriptionMediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsDescriptionRecording(false);
+    }
+  };
+
   const speakText = async (text: string) => {
     if (isSpeaking) return;
     
@@ -476,12 +540,27 @@ const Dashboard = () => {
                   <h2 className="text-2xl font-semibold mb-6">
                     Tell me about your role-play situation. What are you looking to achieve?
                   </h2>
-                  <textarea
-                    value={rolePlayDescription}
-                    onChange={(e) => setRolePlayDescription(e.target.value)}
-                    placeholder="Start writing here..."
-                    className="w-full h-48 p-4 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#1E90FF] focus:border-transparent"
-                  />
+                  <div className="relative">
+                    <textarea
+                      value={rolePlayDescription}
+                      onChange={(e) => setRolePlayDescription(e.target.value)}
+                      placeholder="Start writing here..."
+                      className="w-full h-48 p-4 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#1E90FF] focus:border-transparent pr-12"
+                    />
+                    <Button
+                      className={`absolute right-2 top-2 ${
+                        isDescriptionRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+                      } text-white rounded-full p-2`}
+                      size="icon"
+                      onClick={isDescriptionRecording ? stopDescriptionRecording : startDescriptionRecording}
+                    >
+                      {isDescriptionRecording ? (
+                        <StopCircle className="h-4 w-4" />
+                      ) : (
+                        <Mic className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </section>
 
                 <Button 
