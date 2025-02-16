@@ -1,16 +1,40 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { HomeIcon, Users, HelpCircle, User, CreditCard } from "lucide-react";
+import { HomeIcon, Users, HelpCircle, User } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 const Account = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isCancelling, setIsCancelling] = useState(false);
+  const [paymentDueDate, setPaymentDueDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTrialEndDate = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('trial_ends_at')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.trial_ends_at) {
+          const trialEndDate = new Date(profile.trial_ends_at);
+          const formattedDate = format(trialEndDate, 'MMM d, yyyy');
+          setPaymentDueDate(formattedDate);
+        }
+      }
+    };
+
+    fetchTrialEndDate();
+  }, []);
 
   const handleCancelSubscription = async () => {
     try {
@@ -109,7 +133,9 @@ const Account = () => {
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">Your Current Plan</h2>
               <div className="bg-white rounded-lg shadow p-6 space-y-4">
                 <div className="space-y-2 text-gray-600">
-                  <p>Payment due date: Feb 16, 2025</p>
+                  {paymentDueDate && (
+                    <p>Payment due date: {paymentDueDate}</p>
+                  )}
                 </div>
                 <div className="pt-4 border-t">
                   <Button 
