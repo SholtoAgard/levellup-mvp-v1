@@ -81,17 +81,13 @@ const FeedbackPage = () => {
           >
             ← Back
           </Button>
-          <h1 className="text-2xl font-bold">Roleplay Feedback</h1>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Overall Score</h2>
-            <div className="relative mb-2">
-              <Progress value={session.score || 0} className="h-8" />
-              <span className="absolute inset-0 flex items-center justify-center text-lg font-bold">
-                {session.score}/100
-              </span>
+            <h2 className="text-2xl font-bold mb-6 text-left">Overall call score:</h2>
+            <div className="text-5xl font-bold text-left text-[#ea384c]">
+              {session.score}/100
             </div>
           </div>
 
