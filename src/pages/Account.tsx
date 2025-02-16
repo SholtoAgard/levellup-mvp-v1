@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { HomeIcon, Users, HelpCircle, User } from "lucide-react";
+import { HomeIcon, Users, HelpCircle, User, MessageSquare } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -119,6 +119,15 @@ const Account = () => {
                     >
                       <User className="w-5 h-5" />
                       <span>My Account</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/feedback')}
+                    >
+                      <MessageSquare className="w-5 h-5" />
+                      <span>Give us feedback</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
