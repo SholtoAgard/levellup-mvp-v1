@@ -56,7 +56,7 @@ const FeedbackPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen p-8 flex items-center justify-center">
-        <div className="text-2xl font-bold">Loading feedback...</div>
+        <div className="text-2xl font-bold text-black">Loading feedback...</div>
       </div>
     );
   }
@@ -64,7 +64,7 @@ const FeedbackPage = () => {
   if (!session) {
     return (
       <div className="min-h-screen p-8 flex flex-col items-center justify-center">
-        <div className="text-2xl font-bold mb-4">Session not found</div>
+        <div className="text-2xl font-bold mb-4 text-black">Session not found</div>
         <Button onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
       </div>
     );
@@ -85,17 +85,17 @@ const FeedbackPage = () => {
 
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-6 text-left">Overall call score:</h2>
+            <h2 className="text-2xl font-bold mb-6 text-left text-black">Overall call score:</h2>
             <div className={`text-5xl font-bold text-left ${(session.score || 0) >= 70 ? 'text-green-500' : 'text-[#ea384c]'}`}>
               {session.score}/100
             </div>
           </div>
 
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Detailed Feedback</h2>
-            <div className="prose prose-slate max-w-none">
+            <h2 className="text-xl font-semibold mb-4 text-black">Detailed Feedback</h2>
+            <div className="prose prose-slate max-w-none text-black">
               {session.feedback?.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-4">{paragraph}</p>
+                <p key={index} className="mb-4 text-black">{paragraph}</p>
               ))}
             </div>
           </div>
