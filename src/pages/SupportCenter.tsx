@@ -29,7 +29,10 @@ const SupportCenter = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full text-black">
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/dashboard')}
+                    >
                       <Users className="w-5 h-5" />
                       <span>AI Avatars</span>
                     </SidebarMenuButton>
