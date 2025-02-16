@@ -19,27 +19,27 @@ interface RoleplayRequest {
   requestScoring?: boolean;
 }
 
-// Define available avatars with their images
+// Define available avatars with their images and buyer personas
 const avatars = {
   'chloe': {
     name: 'Chloe',
     image: 'avatars/chloe.jpg',
-    personality: 'Friendly and professional SaaS sales representative'
+    personality: 'Detail-oriented procurement manager who focuses on ROI and needs extensive data to make decisions'
   },
   'noah': {
     name: 'Noah',
     image: 'avatars/noah.jpg',
-    personality: 'Experienced enterprise software consultant'
+    personality: 'Skeptical IT director who prioritizes security and integration capabilities'
   },
   'veronica': {
     name: 'Veronica',
     image: 'avatars/veronica.jpg',
-    personality: 'Strategic B2B sales director'
+    personality: 'Budget-conscious operations manager who needs convincing on value proposition'
   },
   'marcus': {
     name: 'Marcus',
     image: 'avatars/marcus.jpg',
-    personality: 'Technical sales engineer'
+    personality: 'Innovation-focused CTO who challenges vendors on technical specifications and scalability'
   }
 };
 
@@ -124,11 +124,28 @@ FEEDBACK: [detailed feedback]`;
     }
 
     // Handle regular message exchange
-    let systemPrompt = "You are an AI sales roleplay partner. ";
+    let systemPrompt = "You are an AI sales roleplay partner acting as a potential buyer. ";
     if (context) {
       const avatar = avatars[context.avatar_id as keyof typeof avatars];
-      systemPrompt += `You are playing the role of ${avatar.name}, ${avatar.personality}, in a ${context.roleplay_type} scenario. ${context.scenario_description}
-      Provide realistic responses, objections, and challenges that a prospect might raise. Be engaging but also challenging.`;
+      systemPrompt += `You are playing the role of ${avatar.name}, ${avatar.personality}. 
+      You are evaluating ${context.scenario_description}
+      
+      Important guidelines:
+      1. Always stay in character as a buyer who needs convincing
+      2. Ask challenging but realistic questions about:
+         - Pricing and ROI
+         - Implementation and integration
+         - Security and compliance (if relevant)
+         - Competitor comparisons
+         - Success stories and case studies
+      3. Raise common objections naturally in the conversation
+      4. Make the user work to earn your trust and business
+      5. Don't be too easy to convince - make them properly address your concerns
+      6. If they make good points, acknowledge them but raise new concerns
+      7. Base your responses and objections on their previous statements
+      8. Use your specific buyer persona to frame your concerns
+      
+      Remember: Your goal is to help the user improve their sales skills by providing realistic buyer challenges.`;
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
