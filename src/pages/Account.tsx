@@ -1,12 +1,54 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
 import { HomeIcon, Users, HelpCircle, User, CreditCard } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Account = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelSubscription = async () => {
+    try {
+      setIsCancelling(true);
+      
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error('You must be logged in to cancel your subscription');
+      }
+
+      // Call the cancel-subscription function
+      const { error } = await supabase.functions.invoke('cancel-subscription', {
+        body: { user_id: user.id }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Subscription cancelled",
+        description: "Your subscription has been successfully cancelled.",
+      });
+
+      // Redirect to home page after successful cancellation
+      navigate('/');
+      
+    } catch (error: any) {
+      console.error('Cancellation error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel subscription. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -75,6 +117,15 @@ const Account = () => {
                       Update card
                     </Button>
                   </p>
+                </div>
+                <div className="pt-4 border-t">
+                  <Button 
+                    variant="destructive"
+                    onClick={handleCancelSubscription}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling ? "Cancelling..." : "Cancel Account"}
+                  </Button>
                 </div>
               </div>
             </section>
