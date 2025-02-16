@@ -7,6 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 
+type RoleplaySessionResponse = Omit<RoleplaySession, 'status'> & {
+  status: string;
+};
+
 const FeedbackPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -30,7 +34,13 @@ const FeedbackPage = () => {
 
       if (error) throw error;
 
-      setSession(data);
+      // Convert the response data to match RoleplaySession type
+      const typedSession: RoleplaySession = {
+        ...data,
+        status: data.status as "in_progress" | "completed" | "abandoned"
+      };
+
+      setSession(typedSession);
     } catch (error) {
       console.error('Error loading session:', error);
       toast({

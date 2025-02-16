@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +14,7 @@ import RolePlay from "./pages/RolePlay";
 import Auth from "./pages/Auth";
 import Subscription from "./pages/Subscription";
 import ThankYou from "./pages/ThankYou";
-import FeedbackPage from "./pages/FeedbackPage";
+import Feedback from "./pages/Feedback";
 
 const queryClient = new QueryClient();
 
@@ -75,7 +76,7 @@ const App = () => {
                 </PrivateRoute>
               }
             />
-            <Route path="/feedback/:sessionId" element={<FeedbackPage />} />
+            <Route path="/feedback/:sessionId" element={<Feedback />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
