@@ -454,7 +454,10 @@ const Dashboard = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full text-black">
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/support')}
+                    >
                       <HelpCircle className="w-5 h-5" />
                       <span>Support center</span>
                     </SidebarMenuButton>
