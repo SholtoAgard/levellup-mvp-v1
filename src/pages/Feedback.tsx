@@ -86,7 +86,7 @@ const FeedbackPage = () => {
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-6 text-left">Overall call score:</h2>
-            <div className="text-5xl font-bold text-left text-[#ea384c]">
+            <div className={`text-5xl font-bold text-left ${(session.score || 0) >= 70 ? 'text-green-500' : 'text-[#ea384c]'}`}>
               {session.score}/100
             </div>
           </div>
