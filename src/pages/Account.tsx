@@ -110,12 +110,6 @@ const Account = () => {
               <div className="bg-white rounded-lg shadow p-6 space-y-4">
                 <div className="space-y-2 text-gray-600">
                   <p>Payment due date: Feb 16, 2025</p>
-                  <p className="flex items-center gap-2">
-                    Payment Card: ****0362 
-                    <Button variant="link" className="text-[#1E90FF] p-0 h-auto font-normal">
-                      Update card
-                    </Button>
-                  </p>
                 </div>
                 <div className="pt-4 border-t">
                   <Button 
