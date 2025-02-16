@@ -66,7 +66,6 @@ const Account = () => {
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">Your Current Plan</h2>
               <div className="bg-white rounded-lg shadow p-6 space-y-4">
-                <h3 className="text-xl font-medium text-gray-900">Podbean Unlimited Audio Monthly Plan</h3>
                 <div className="space-y-2 text-gray-600">
                   <p>Payment due date: Feb 16, 2025</p>
                   <p>Payment Email: iagard@gmail.com</p>
