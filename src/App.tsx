@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +13,7 @@ import RolePlay from "./pages/RolePlay";
 import Auth from "./pages/Auth";
 import Subscription from "./pages/Subscription";
 import ThankYou from "./pages/ThankYou";
+import FeedbackPage from "./pages/FeedbackPage";
 
 const queryClient = new QueryClient();
 
@@ -47,38 +47,41 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return children;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/subscription" element={<Subscription />} />
-          <Route path="/thank-you" element={<ThankYou />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/roleplay"
-            element={
-              <PrivateRoute>
-                <RolePlay />
-              </PrivateRoute>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/thank-you" element={<ThankYou />} />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/roleplay"
+              element={
+                <PrivateRoute>
+                  <RolePlay />
+                </PrivateRoute>
+              }
+            />
+            <Route path="/feedback/:sessionId" element={<FeedbackPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
