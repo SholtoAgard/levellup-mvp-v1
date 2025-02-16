@@ -12,7 +12,7 @@ const Feedback = () => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const SidebarContent = () => (
+  const menuContent = (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton 
@@ -88,7 +88,7 @@ const Feedback = () => {
               </div>
               <SidebarGroup>
                 <SidebarGroupContent>
-                  <SidebarContent />
+                  {menuContent}
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
@@ -108,7 +108,7 @@ const Feedback = () => {
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                     <nav className="flex flex-col gap-6 mt-6">
-                      <SidebarContent />
+                      {menuContent}
                     </nav>
                   </SheetContent>
                 </Sheet>

@@ -74,7 +74,7 @@ const Account = () => {
     }
   };
 
-  const SidebarContent = () => (
+  const menuContent = (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton 
@@ -150,7 +150,7 @@ const Account = () => {
               </div>
               <SidebarGroup>
                 <SidebarGroupContent>
-                  <SidebarContent />
+                  {menuContent}
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
@@ -170,7 +170,7 @@ const Account = () => {
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                     <nav className="flex flex-col gap-6 mt-6">
-                      <SidebarContent />
+                      {menuContent}
                     </nav>
                   </SheetContent>
                 </Sheet>
