@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { HomeIcon, Users, HelpCircle, User, Send, Mic, StopCircle, Volume2 } from "lucide-react";
+import { HomeIcon, Users, HelpCircle, User, Send, Mic, StopCircle, Volume2, MessageSquare } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -472,6 +471,15 @@ const Dashboard = () => {
                     >
                       <User className="w-5 h-5" />
                       <span>My Account</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/feedback')}
+                    >
+                      <MessageSquare className="w-5 h-5" />
+                      <span>Give us feedback</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

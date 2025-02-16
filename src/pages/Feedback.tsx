@@ -1,120 +1,101 @@
 
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import type { RoleplaySession } from "@/lib/types";
-import { Progress } from "@/components/ui/progress";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
+import { HomeIcon, Users, HelpCircle, User, MessageSquare } from "lucide-react";
 
-type RoleplaySessionResponse = Omit<RoleplaySession, 'status'> & {
-  status: string;
-};
-
-const FeedbackPage = () => {
-  const { sessionId } = useParams();
+const Feedback = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [session, setSession] = useState<RoleplaySession | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    loadSession();
-  }, [sessionId]);
-
-  const loadSession = async () => {
-    if (!sessionId) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('roleplay_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single();
-
-      if (error) throw error;
-
-      // Convert the response data to match RoleplaySession type
-      const typedSession: RoleplaySession = {
-        ...data,
-        status: data.status as "in_progress" | "completed" | "abandoned"
-      };
-
-      setSession(typedSession);
-    } catch (error) {
-      console.error('Error loading session:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load feedback",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen p-8 flex items-center justify-center">
-        <div className="text-2xl font-bold text-black">Loading feedback...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="min-h-screen p-8 flex flex-col items-center justify-center">
-        <div className="text-2xl font-bold mb-4 text-black">Session not found</div>
-        <Button onClick={() => navigate('/dashboard')}>Return to Dashboard</Button>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center mb-8">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/dashboard')}
-            className="mr-4"
-          >
-            ← Back
-          </Button>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-6 text-left text-black">Overall call score:</h2>
-            <div className={`text-5xl font-bold text-left ${(session.score || 0) >= 70 ? 'text-green-500' : 'text-[#ea384c]'}`}>
-              {session.score}/100
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <Sidebar>
+          <SidebarContent>
+            <div className="p-4 mb-4">
+              <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
             </div>
-          </div>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/')}
+                    >
+                      <HomeIcon className="w-5 h-5" />
+                      <span>Home</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/dashboard')}
+                    >
+                      <Users className="w-5 h-5" />
+                      <span>AI Avatars</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/support')}
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                      <span>Support center</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/account')}
+                    >
+                      <User className="w-5 h-5" />
+                      <span>My Account</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/feedback')}
+                    >
+                      <MessageSquare className="w-5 h-5" />
+                      <span>Give us feedback</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
 
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4 text-black">Detailed Feedback</h2>
-            <div className="prose prose-slate max-w-none text-black">
-              {session.feedback?.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-4 text-black">{paragraph}</p>
-              ))}
+        <div className="flex-1 p-8">
+          <div className="max-w-3xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">Help Us Build the #1 Sales Training Platform</h1>
+            <div className="prose prose-lg">
+              <p className="text-gray-600 mb-6">
+                At LevellUp, our mission is to create the most effective and widely used sales training platform in the world. To achieve that, we need your help!
+              </p>
+              <p className="text-gray-600 mb-6">
+                Your feedback is invaluable in shaping LevellUp into the ultimate tool for sales reps like you. By sharing your thoughts, you'll play a key role in improving the platform and making it even better.
+              </p>
+              <p className="text-gray-600 mb-8">
+                Please click the "Give Your Feedback" button to take a short survey—it'll only take 3-5 minutes to complete. Thank you for helping us level up!
+              </p>
+              <Button 
+                size="lg" 
+                className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+                onClick={() => window.open('https://forms.gle/your-form-url', '_blank')}
+              >
+                Give Your Feedback
+              </Button>
             </div>
-          </div>
-
-          <div className="flex gap-4">
-            <Button onClick={() => navigate('/dashboard')}>
-              Return to Dashboard
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate(`/roleplay`, { state: { session } })}
-            >
-              Review Conversation
-            </Button>
           </div>
         </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
-export default FeedbackPage;
+export default Feedback;
