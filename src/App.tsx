@@ -9,6 +9,7 @@ import Feedback from "@/pages/Feedback";
 import Subscription from "@/pages/Subscription";
 import ThankYou from "@/pages/ThankYou";
 import SupportCenter from "@/pages/SupportCenter";
+import Account from "@/pages/Account";
 
 import "./App.css";
 
@@ -24,6 +25,7 @@ function App() {
         <Route path="/subscription" element={<Subscription />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/support" element={<SupportCenter />} />
+        <Route path="/account" element={<Account />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

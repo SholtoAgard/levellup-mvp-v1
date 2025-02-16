@@ -3,9 +3,9 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { HomeIcon, Users, HelpCircle, User, Mail } from "lucide-react";
+import { HomeIcon, Users, HelpCircle, User, CreditCard } from "lucide-react";
 
-const SupportCenter = () => {
+const Account = () => {
   const navigate = useNavigate();
 
   return (
@@ -62,20 +62,23 @@ const SupportCenter = () => {
         </Sidebar>
 
         <div className="flex-1 p-8">
-          <div className="max-w-2xl mx-auto">
-            <h1 className="text-4xl font-bold text-black mb-6">Need Help?</h1>
-            <p className="text-lg text-gray-700 mb-8">
-              Our customer success team is here to help you succeed. Feel free to reach out to us anytime.
-            </p>
-            <a 
-              href="mailto:ian@levellup.co"
-              className="inline-block"
-            >
-              <Button className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white">
-                <Mail className="mr-2 h-4 w-4" />
-                Contact Support Team
-              </Button>
-            </a>
+          <div className="max-w-4xl mx-auto space-y-12">
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Your Current Plan</h2>
+              <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                <h3 className="text-xl font-medium text-gray-900">Podbean Unlimited Audio Monthly Plan</h3>
+                <div className="space-y-2 text-gray-600">
+                  <p>Payment due date: Feb 16, 2025</p>
+                  <p>Payment Email: iagard@gmail.com</p>
+                  <p className="flex items-center gap-2">
+                    Payment Card: ****0362 
+                    <Button variant="link" className="text-[#1E90FF] p-0 h-auto font-normal">
+                      Update card
+                    </Button>
+                  </p>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </div>
@@ -83,4 +86,4 @@ const SupportCenter = () => {
   );
 };
 
-export default SupportCenter;
+export default Account;

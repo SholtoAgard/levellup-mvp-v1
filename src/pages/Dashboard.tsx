@@ -466,7 +466,10 @@ const Dashboard = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full text-black">
+                    <SidebarMenuButton 
+                      className="w-full text-black"
+                      onClick={() => navigate('/account')}
+                    >
                       <User className="w-5 h-5" />
                       <span>My Account</span>
                     </SidebarMenuButton>
