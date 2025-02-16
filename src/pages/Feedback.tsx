@@ -86,7 +86,7 @@ const Feedback = () => {
               <Button 
                 size="lg" 
                 className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
-                onClick={() => window.open('https://forms.gle/your-form-url', '_blank')}
+                onClick={() => window.open('https://forms.gle/nWB65dFyuc8ctN5v6', '_blank')}
               >
                 Give Your Feedback
               </Button>
