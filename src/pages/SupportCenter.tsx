@@ -49,7 +49,7 @@ const SupportCenter = () => {
                   <SidebarMenuItem>
                     <SidebarMenuButton className="w-full text-black">
                       <User className="w-5 h-5" />
-                      <span>Account</span>
+                      <span>My Account</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
