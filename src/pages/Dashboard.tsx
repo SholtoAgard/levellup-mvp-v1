@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -432,31 +433,31 @@ const Dashboard = () => {
         <Sidebar>
           <SidebarContent>
             <div className="p-4 mb-4">
-              <h1 className="text-2xl font-bold">LEVELLUP</h1>
+              <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
             </div>
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full text-[#1E90FF]">
+                    <SidebarMenuButton className="w-full text-black">
                       <HomeIcon className="w-5 h-5" />
                       <span>Home</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full">
+                    <SidebarMenuButton className="w-full text-black">
                       <Users className="w-5 h-5" />
                       <span>AI Avatars</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full text-[#1E90FF]">
+                    <SidebarMenuButton className="w-full text-black">
                       <HelpCircle className="w-5 h-5" />
                       <span>Support center</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton className="w-full">
+                    <SidebarMenuButton className="w-full text-black">
                       <User className="w-5 h-5" />
                       <span>Account</span>
                     </SidebarMenuButton>
