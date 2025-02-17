@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
 import Footer from "@/components/Footer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const RolePlay = () => {
   const location = useLocation();
@@ -20,6 +21,7 @@ const RolePlay = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!session) {
@@ -240,41 +242,43 @@ const RolePlay = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="p-8 flex-1">
+      <div className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-8 flex-wrap gap-4">
             <div className="flex items-center">
               <Button 
                 variant="ghost" 
                 onClick={() => navigate('/dashboard')}
-                className="mr-4"
+                className="mr-2 sm:mr-4"
+                size={isMobile ? "sm" : "default"}
               >
                 ← Back
               </Button>
-              <h1 className="text-2xl font-bold">Role Play Session</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">Role Play Session</h1>
             </div>
             <Button
               onClick={handleGetScore}
               disabled={isLoading || messages.length < 4}
               className="bg-amber-500 hover:bg-amber-600"
+              size={isMobile ? "sm" : "default"}
             >
-              <Award className="w-5 h-5 mr-2" />
+              <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Get Your Score
             </Button>
           </div>
 
-          <div className="flex gap-8">
-            <div className="w-1/3">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+            <div className="w-full lg:w-1/3">
               {session?.avatar_id && (
-                <div className="text-center">
-                  <Avatar className="w-48 h-48 mx-auto mb-4">
+                <div className="text-center bg-gray-50 p-4 rounded-lg">
+                  <Avatar className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4">
                     <AvatarImage 
                       src={supabase.storage
                         .from('avatars')
                         .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl}
                     />
                   </Avatar>
-                  <h2 className="text-xl font-semibold mb-2">
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2">
                     {session.avatar_id}
                   </h2>
                   <p className="text-sm text-gray-600">
@@ -284,15 +288,15 @@ const RolePlay = () => {
               )}
             </div>
 
-            <div className="w-2/3 flex flex-col">
-              <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg min-h-[400px]">
+            <div className="w-full lg:w-2/3 flex flex-col">
+              <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg min-h-[300px] sm:min-h-[400px] bg-white">
                 {messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] p-4 rounded-lg ${
+                      className={`max-w-[85%] sm:max-w-[80%] p-3 sm:p-4 rounded-lg ${
                         message.role === 'user'
                           ? 'bg-[#1E90FF] text-white'
                           : 'bg-gray-100 text-gray-900'
@@ -314,13 +318,13 @@ const RolePlay = () => {
                 ))}
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-2 sm:gap-4">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
+                  className="flex-1 p-2 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -330,25 +334,27 @@ const RolePlay = () => {
                 />
                 <Button
                   className={`${isRecording ? 'bg-red-500' : 'bg-blue-500'} hover:bg-opacity-90 text-white`}
+                  size={isMobile ? "icon" : "default"}
                   onClick={isRecording ? stopRecording : startRecording}
                 >
                   {isRecording ? (
-                    <StopCircle className="w-5 h-5" />
+                    <StopCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   ) : (
-                    <Mic className="w-5 h-5" />
+                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
                   )}
                 </Button>
                 <Button
-                  className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white px-6"
+                  className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
                   onClick={() => sendMessage()}
                   disabled={isLoading}
+                  size={isMobile ? "icon" : "default"}
                 >
                   {isLoading ? (
-                    "Sending..."
+                    "..."
                   ) : (
                     <>
-                      <Send className="w-5 h-5 mr-2" />
-                      Send
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                      {!isMobile && <span className="ml-2">Send</span>}
                     </>
                   )}
                 </Button>
