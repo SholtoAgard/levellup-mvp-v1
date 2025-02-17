@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import PricingSection from "@/components/PricingSection";
+import Footer from "@/components/Footer";
+
 const ThankYou = () => {
   const [firstName, setFirstName] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -12,6 +14,7 @@ const ThankYou = () => {
   const {
     toast
   } = useToast();
+
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0);
@@ -60,41 +63,48 @@ const ThankYou = () => {
     };
     getAssetUrls();
   }, [toast]);
-  return <div className="min-h-screen bg-gray-50 py-16 px-4">
-      <div className="max-w-3xl mx-auto text-center">
-        <img src={photoUrl || '/placeholder.svg'} alt="Profile" className="w-32 h-32 rounded-full mx-auto mb-4 object-cover bg-gray-100" onError={e => {
-        console.error('Error loading image:', e);
-        e.currentTarget.src = '/placeholder.svg';
-      }} />
-        <p className="text-lg font-medium text-gray-700 mb-8">Ian Agard, founder of LevellUp</p>
-        <h1 className="text-3xl md:text-4xl font-bold text-[#222222] mb-8">
-          Thank you for subscribing to my newsletter!
-        </h1>
-        
-        <Button className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg py-6 px-8 mb-12" onClick={() => window.open("https://docs.google.com/document/d/1jMLzuxKaRcTB1qLulwOFYu_YmOyECmerFGkqW-r_ooQ/edit?tab=t.0", "_blank")}>Download Cold Call Script</Button>
 
-        <div className="space-y-6 text-left max-w-2xl mx-auto">
-          <p className="text-xl text-gray-700">Here's the thing.</p>
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="py-16 px-4 flex-1">
+        <div className="max-w-3xl mx-auto text-center">
+          <img src={photoUrl || '/placeholder.svg'} alt="Profile" className="w-32 h-32 rounded-full mx-auto mb-4 object-cover bg-gray-100" onError={e => {
+            console.error('Error loading image:', e);
+            e.currentTarget.src = '/placeholder.svg';
+          }} />
+          <p className="text-lg font-medium text-gray-700 mb-8">Ian Agard, founder of LevellUp</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#222222] mb-8">
+            Thank you for subscribing to my newsletter!
+          </h1>
           
-          <p className="text-lg text-gray-600">
-            You can let this be just another email sign-up.
-          </p>
+          <Button className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white text-lg py-6 px-8 mb-12" onClick={() => window.open("https://docs.google.com/document/d/1jMLzuxKaRcTB1qLulwOFYu_YmOyECmerFGkqW-r_ooQ/edit?tab=t.0", "_blank")}>Download Cold Call Script</Button>
 
-          <p className="text-lg text-gray-600">
-            Or...
-          </p>
+          <div className="space-y-6 text-left max-w-2xl mx-auto">
+            <p className="text-xl text-gray-700">Here's the thing.</p>
+            
+            <p className="text-lg text-gray-600">
+              You can let this be just another email sign-up.
+            </p>
 
-          <p className="text-lg text-gray-600 mb-8">
-            Do you mark today as the day you started taking massive action towards building a thriving, high-income sales career?
-          </p>
+            <p className="text-lg text-gray-600">
+              Or...
+            </p>
 
-          <p className="text-lg text-gray-600 mb-8">
-            But the truth is… I know you're here because you want more from your sales career.
-          </p>
+            <p className="text-lg text-gray-600 mb-8">
+              Do you mark today as the day you started taking massive action towards building a thriving, high-income sales career?
+            </p>
 
-          <PricingSection />
+            <p className="text-lg text-gray-600 mb-8">
+              But the truth is… I know you're here because you want more from your sales career.
+            </p>
+
+            <PricingSection />
+          </div>
         </div>
       </div>
-    </div>;
+      <Footer />
+    </div>
+  );
 };
+
 export default ThankYou;

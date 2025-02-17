@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Footer from "@/components/Footer";
 
 const avatars = [
   { 
@@ -513,7 +514,7 @@ const Dashboard = () => {
           </Sidebar>
         )}
 
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
           {isMobile && (
             <div className="p-4 border-b">
               <div className="flex items-center justify-between">
@@ -534,7 +535,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          <div className="p-8">
+          <div className="p-8 flex-1">
             <div className="max-w-4xl mx-auto space-y-12">
               {!currentSession ? (
                 <>
@@ -760,6 +761,7 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+          <Footer />
         </div>
       </div>
     </SidebarProvider>

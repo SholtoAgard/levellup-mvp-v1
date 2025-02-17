@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu
 import { HomeIcon, Users, HelpCircle, User, Mail, MessageSquare, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Footer from "@/components/Footer";
 
 const SupportCenter = () => {
   const navigate = useNavigate();
@@ -95,7 +95,7 @@ const SupportCenter = () => {
           </Sidebar>
         )}
 
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
           {isMobile && (
             <div className="p-4 border-b">
               <div className="flex items-center justify-between">
@@ -116,7 +116,7 @@ const SupportCenter = () => {
             </div>
           )}
 
-          <div className="p-8">
+          <div className="p-8 flex-1">
             <div className="max-w-2xl mx-auto">
               <h1 className="text-4xl font-bold text-black mb-6">Need Help?</h1>
               <p className="text-lg text-gray-700 mb-8">
@@ -133,6 +133,7 @@ const SupportCenter = () => {
               </a>
             </div>
           </div>
+          <Footer />
         </div>
       </div>
     </SidebarProvider>

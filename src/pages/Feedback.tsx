@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu
 import { HomeIcon, Users, HelpCircle, User, MessageSquare, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Footer from "@/components/Footer";
 
 const Feedback = () => {
   const navigate = useNavigate();
@@ -95,7 +95,7 @@ const Feedback = () => {
           </Sidebar>
         )}
 
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col">
           {isMobile && (
             <div className="p-4 border-b">
               <div className="flex items-center justify-between">
@@ -116,7 +116,7 @@ const Feedback = () => {
             </div>
           )}
 
-          <div className="p-8">
+          <div className="p-8 flex-1">
             <div className="max-w-3xl mx-auto">
               <h1 className="text-3xl font-bold text-gray-900 mb-8">Help Us Build the #1 Sales Training Platform</h1>
               <div className="prose prose-lg">
@@ -139,6 +139,7 @@ const Feedback = () => {
               </div>
             </div>
           </div>
+          <Footer />
         </div>
       </div>
     </SidebarProvider>
