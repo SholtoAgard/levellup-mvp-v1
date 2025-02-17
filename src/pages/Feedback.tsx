@@ -95,9 +95,7 @@ const Feedback = () => {
             <div className="max-w-3xl mx-auto">
               <h1 className="text-3xl font-bold text-gray-900 mb-8">Help Me Build the #1 Sales Training Platform</h1>
               <div className="prose prose-lg">
-                <p className="text-gray-600 mb-6">
-                  At LevellUp, our mission is to create the most effective and widely used sales training platform in the world. To achieve that, we need your help!
-                </p>
+                <p className="text-gray-600 mb-6">At LevellUp, my mission is to create the most effective and widely used sales training platform in the world. To achieve that, I need your help!</p>
                 <p className="text-gray-600 mb-6">
                   Your feedback is invaluable in shaping LevellUp into the ultimate tool for sales reps like you. By sharing your thoughts, you'll play a key role in improving the platform and making it even better.
                 </p>
