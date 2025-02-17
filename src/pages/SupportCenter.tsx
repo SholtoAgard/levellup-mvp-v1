@@ -7,12 +7,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Footer from "@/components/Footer";
-
 const SupportCenter = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
-
   const menuContent = <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton className="w-full text-black" onClick={() => {
@@ -60,12 +58,9 @@ const SupportCenter = () => {
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>;
-
-  return (
-    <SidebarProvider>
+  return <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {!isMobile && (
-          <Sidebar>
+        {!isMobile && <Sidebar>
             <SidebarContent>
               <div className="p-4 mb-4">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
@@ -76,12 +71,10 @@ const SupportCenter = () => {
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
-          </Sidebar>
-        )}
+          </Sidebar>}
 
         <div className="flex-1 flex flex-col">
-          {isMobile && (
-            <div className="p-4 border-b">
+          {isMobile && <div className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
                 <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -97,14 +90,13 @@ const SupportCenter = () => {
                   </SheetContent>
                 </Sheet>
               </div>
-            </div>
-          )}
+            </div>}
 
           <div className="p-8 flex-1">
             <div className="max-w-2xl mx-auto">
               <div className="flex items-center gap-6 mb-8">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src="/placeholder.svg" alt="Profile" />
+                  <AvatarImage alt="Profile" src="/lovable-uploads/efa3cd88-e508-4aa3-920e-b4753e1ffdd5.jpg" />
                   <AvatarFallback>YP</AvatarFallback>
                 </Avatar>
                 <div>
@@ -123,8 +115,6 @@ const SupportCenter = () => {
           <Footer />
         </div>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
-
 export default SupportCenter;
