@@ -134,7 +134,7 @@ const Account = () => {
           }}
         >
           <MessageSquare className="w-5 h-5" />
-          <span>Give us feedback</span>
+          <span>Give me feedback</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
