@@ -3,18 +3,50 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const NewsletterSection = () => {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Store the form data in localStorage to access it on the thank you page
-    localStorage.setItem("newsletter_firstName", firstName);
-    localStorage.setItem("newsletter_email", email);
-    navigate("/thank-you");
+    setIsSubmitting(true);
+
+    try {
+      // Store the form data in localStorage to access it on the thank you page
+      localStorage.setItem("newsletter_firstName", firstName);
+      localStorage.setItem("newsletter_email", email);
+
+      // Send welcome email
+      const { error } = await supabase.functions.invoke('send-welcome-email', {
+        body: { firstName, email }
+      });
+
+      if (error) {
+        console.error('Error sending welcome email:', error);
+        toast({
+          title: "Newsletter Signup Successful",
+          description: "You've been added to our newsletter, but there was an issue sending the welcome email. Don't worry, you'll still receive our updates!",
+          variant: "default",
+        });
+      }
+
+      navigate("/thank-you");
+    } catch (error) {
+      console.error('Error in form submission:', error);
+      toast({
+        title: "Error",
+        description: "There was an issue processing your signup. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -83,8 +115,9 @@ const NewsletterSection = () => {
             <Button 
               type="submit"
               className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+              disabled={isSubmitting}
             >
-              Join Newsletter
+              {isSubmitting ? "Joining..." : "Join Newsletter"}
             </Button>
           </div>
         </form>
