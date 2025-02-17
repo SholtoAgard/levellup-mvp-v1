@@ -6,10 +6,12 @@ import { HomeIcon, Users, HelpCircle, User, MessageSquare, Menu } from "lucide-r
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Footer from "@/components/Footer";
+
 const Feedback = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+  
   const menuContent = <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton className="w-full text-black" onClick={() => {
@@ -57,6 +59,7 @@ const Feedback = () => {
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>;
+
   return <SidebarProvider>
       <div className="min-h-screen flex w-full">
         {!isMobile && <Sidebar>
@@ -100,7 +103,7 @@ const Feedback = () => {
                   Your feedback is invaluable in shaping LevellUp into the ultimate tool for sales reps like you. By sharing your thoughts, you'll play a key role in improving the platform and making it even better.
                 </p>
                 <p className="text-gray-600 mb-8">
-                  Please click the "Give Your Feedback" button to take a short survey—it'll only take 3-5 minutes to complete. Thank you for helping us level up!
+                  Please click the "Give Your Feedback" button to take a short survey—it'll only take 3-5 minutes to complete. Thank you for helping me level up!
                 </p>
                 <Button size="lg" className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white" onClick={() => window.open('https://forms.gle/nWB65dFyuc8ctN5v6', '_blank')}>
                   Give Your Feedback
@@ -113,4 +116,5 @@ const Feedback = () => {
       </div>
     </SidebarProvider>;
 };
+
 export default Feedback;
