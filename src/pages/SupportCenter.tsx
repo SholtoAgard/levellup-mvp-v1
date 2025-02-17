@@ -6,82 +6,60 @@ import { HomeIcon, Users, HelpCircle, User, Mail, MessageSquare, Menu } from "lu
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Footer from "@/components/Footer";
-
 const SupportCenter = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
-
-  const menuContent = (
-    <SidebarMenu>
+  const menuContent = <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/');
+        setIsOpen(false);
+      }}>
           <HomeIcon className="w-5 h-5" />
           <span>Home</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/dashboard');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/dashboard');
+        setIsOpen(false);
+      }}>
           <Users className="w-5 h-5" />
           <span>AI Avatars</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/support');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/support');
+        setIsOpen(false);
+      }}>
           <HelpCircle className="w-5 h-5" />
           <span>Support center</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/account');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/account');
+        setIsOpen(false);
+      }}>
           <User className="w-5 h-5" />
           <span>My Account</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/feedback');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/feedback');
+        setIsOpen(false);
+      }}>
           <MessageSquare className="w-5 h-5" />
           <span>Give us feedback</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
-    </SidebarMenu>
-  );
-
-  return (
-    <SidebarProvider>
+    </SidebarMenu>;
+  return <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {!isMobile && (
-          <Sidebar>
+        {!isMobile && <Sidebar>
             <SidebarContent>
               <div className="p-4 mb-4">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
@@ -92,12 +70,10 @@ const SupportCenter = () => {
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
-          </Sidebar>
-        )}
+          </Sidebar>}
 
         <div className="flex-1 flex flex-col">
-          {isMobile && (
-            <div className="p-4 border-b">
+          {isMobile && <div className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
                 <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -113,19 +89,13 @@ const SupportCenter = () => {
                   </SheetContent>
                 </Sheet>
               </div>
-            </div>
-          )}
+            </div>}
 
           <div className="p-8 flex-1">
             <div className="max-w-2xl mx-auto">
               <h1 className="text-4xl font-bold text-black mb-6">Need Help?</h1>
-              <p className="text-lg text-gray-700 mb-8">
-                Our customer success team is here to help you succeed. Feel free to reach out to us anytime.
-              </p>
-              <a 
-                href="mailto:ian@levellup.co"
-                className="inline-block"
-              >
+              <p className="text-lg text-gray-700 mb-8">I'm here to help you succeed. Feel free to reach out to me anytime.</p>
+              <a href="mailto:ian@levellup.co" className="inline-block">
                 <Button className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white">
                   <Mail className="mr-2 h-4 w-4" />
                   Contact Support Team
@@ -136,8 +106,6 @@ const SupportCenter = () => {
           <Footer />
         </div>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
-
 export default SupportCenter;
