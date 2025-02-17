@@ -7,10 +7,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Footer from "@/components/Footer";
+
 const SupportCenter = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+
   const menuContent = <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton className="w-full text-black" onClick={() => {
@@ -58,6 +60,7 @@ const SupportCenter = () => {
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>;
+
   return <SidebarProvider>
       <div className="min-h-screen flex w-full">
         {!isMobile && <Sidebar>
@@ -107,12 +110,10 @@ const SupportCenter = () => {
                   <p className="text-gray-700 mt-2 text-2xl">I'm here to help you succeed using LevellUp. Feel free to reach out to me anytime.</p>
                 </div>
               </div>
-              <a href="mailto:ian@levellup.co" className="inline-block">
-                <Button className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white">
-                  <Mail className="mr-2 h-4 w-4" />
-                  Contact Support Team
-                </Button>
-              </a>
+              <p className="text-lg text-gray-700">
+                <Mail className="inline mr-2 h-5 w-5 align-text-bottom" />
+                <a href="mailto:ian@levellup.co" className="hover:underline">ian@levellup.co</a>
+              </p>
             </div>
           </div>
           <Footer />
@@ -120,4 +121,5 @@ const SupportCenter = () => {
       </div>
     </SidebarProvider>;
 };
+
 export default SupportCenter;
