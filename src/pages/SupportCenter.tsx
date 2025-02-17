@@ -5,11 +5,14 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu
 import { HomeIcon, Users, HelpCircle, User, Mail, MessageSquare, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Footer from "@/components/Footer";
+
 const SupportCenter = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+
   const menuContent = <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton className="w-full text-black" onClick={() => {
@@ -57,9 +60,12 @@ const SupportCenter = () => {
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>;
-  return <SidebarProvider>
+
+  return (
+    <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {!isMobile && <Sidebar>
+        {!isMobile && (
+          <Sidebar>
             <SidebarContent>
               <div className="p-4 mb-4">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
@@ -70,10 +76,12 @@ const SupportCenter = () => {
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
-          </Sidebar>}
+          </Sidebar>
+        )}
 
         <div className="flex-1 flex flex-col">
-          {isMobile && <div className="p-4 border-b">
+          {isMobile && (
+            <div className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
                 <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -89,12 +97,21 @@ const SupportCenter = () => {
                   </SheetContent>
                 </Sheet>
               </div>
-            </div>}
+            </div>
+          )}
 
           <div className="p-8 flex-1">
             <div className="max-w-2xl mx-auto">
-              <h1 className="text-4xl font-bold text-black mb-6">Need Help?</h1>
-              <p className="text-lg text-gray-700 mb-8">I'm here to help you succeed. Feel free to reach out to me anytime.</p>
+              <div className="flex items-center gap-6 mb-8">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src="/placeholder.svg" alt="Profile" />
+                  <AvatarFallback>YP</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h1 className="text-4xl font-bold text-black">Need Help?</h1>
+                  <p className="text-lg text-gray-700 mt-2">I'm here to help you succeed. Feel free to reach out to me anytime.</p>
+                </div>
+              </div>
               <a href="mailto:ian@levellup.co" className="inline-block">
                 <Button className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white">
                   <Mail className="mr-2 h-4 w-4" />
@@ -106,6 +123,8 @@ const SupportCenter = () => {
           <Footer />
         </div>
       </div>
-    </SidebarProvider>;
+    </SidebarProvider>
+  );
 };
+
 export default SupportCenter;
