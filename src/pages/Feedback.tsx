@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,82 +6,60 @@ import { HomeIcon, Users, HelpCircle, User, MessageSquare, Menu } from "lucide-r
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Footer from "@/components/Footer";
-
 const Feedback = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
-
-  const menuContent = (
-    <SidebarMenu>
+  const menuContent = <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/');
+        setIsOpen(false);
+      }}>
           <HomeIcon className="w-5 h-5" />
           <span>Home</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/dashboard');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/dashboard');
+        setIsOpen(false);
+      }}>
           <Users className="w-5 h-5" />
           <span>AI Avatars</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/support');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/support');
+        setIsOpen(false);
+      }}>
           <HelpCircle className="w-5 h-5" />
           <span>Support center</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/account');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/account');
+        setIsOpen(false);
+      }}>
           <User className="w-5 h-5" />
           <span>My Account</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/feedback');
-            setIsOpen(false);
-          }}
-        >
+        <SidebarMenuButton className="w-full text-black" onClick={() => {
+        navigate('/feedback');
+        setIsOpen(false);
+      }}>
           <MessageSquare className="w-5 h-5" />
           <span>Give me feedback</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
-    </SidebarMenu>
-  );
-
-  return (
-    <SidebarProvider>
+    </SidebarMenu>;
+  return <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {!isMobile && (
-          <Sidebar>
+        {!isMobile && <Sidebar>
             <SidebarContent>
               <div className="p-4 mb-4">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
@@ -93,12 +70,10 @@ const Feedback = () => {
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
-          </Sidebar>
-        )}
+          </Sidebar>}
 
         <div className="flex-1 flex flex-col">
-          {isMobile && (
-            <div className="p-4 border-b">
+          {isMobile && <div className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
                 <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -114,12 +89,11 @@ const Feedback = () => {
                   </SheetContent>
                 </Sheet>
               </div>
-            </div>
-          )}
+            </div>}
 
           <div className="p-8 flex-1">
             <div className="max-w-3xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">Help Us Build the #1 Sales Training Platform</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-8">Help Me Build the #1 Sales Training Platform</h1>
               <div className="prose prose-lg">
                 <p className="text-gray-600 mb-6">
                   At LevellUp, our mission is to create the most effective and widely used sales training platform in the world. To achieve that, we need your help!
@@ -130,11 +104,7 @@ const Feedback = () => {
                 <p className="text-gray-600 mb-8">
                   Please click the "Give Your Feedback" button to take a short survey—it'll only take 3-5 minutes to complete. Thank you for helping us level up!
                 </p>
-                <Button 
-                  size="lg" 
-                  className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
-                  onClick={() => window.open('https://forms.gle/nWB65dFyuc8ctN5v6', '_blank')}
-                >
+                <Button size="lg" className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white" onClick={() => window.open('https://forms.gle/nWB65dFyuc8ctN5v6', '_blank')}>
                   Give Your Feedback
                 </Button>
               </div>
@@ -143,8 +113,6 @@ const Feedback = () => {
           <Footer />
         </div>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
-
 export default Feedback;
