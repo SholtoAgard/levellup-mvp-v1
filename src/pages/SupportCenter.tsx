@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,12 +7,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Footer from "@/components/Footer";
-
 const SupportCenter = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
-
   const menuContent = <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton className="w-full text-black" onClick={() => {
@@ -61,7 +58,6 @@ const SupportCenter = () => {
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>;
-
   return <SidebarProvider>
       <div className="min-h-screen flex w-full">
         {!isMobile && <Sidebar>
@@ -108,7 +104,7 @@ const SupportCenter = () => {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold text-black">Need Help?</h1>
-                  <p className="text-lg text-gray-700 mt-2">I'm here to help you succeed. Feel free to reach out to me anytime.</p>
+                  <p className="text-gray-700 mt-2 text-2xl">I'm here to help you succeed using LevellUp. Feel free to reach out to me anytime.</p>
                 </div>
               </div>
               <a href="mailto:ian@levellup.co" className="inline-block">
@@ -124,5 +120,4 @@ const SupportCenter = () => {
       </div>
     </SidebarProvider>;
 };
-
 export default SupportCenter;
