@@ -22,18 +22,19 @@ const NewsletterSection = () => {
       localStorage.setItem("newsletter_firstName", firstName);
       localStorage.setItem("newsletter_email", email);
 
-      // Send welcome email
-      const { error } = await supabase.functions.invoke('send-welcome-email', {
+      // Add subscriber to MailerLite
+      const { error } = await supabase.functions.invoke('add-subscriber', {
         body: { firstName, email }
       });
 
       if (error) {
-        console.error('Error sending welcome email:', error);
+        console.error('Error adding subscriber:', error);
         toast({
-          title: "Newsletter Signup Successful",
-          description: "You've been added to our newsletter, but there was an issue sending the welcome email. Don't worry, you'll still receive our updates!",
-          variant: "default",
+          title: "Error",
+          description: "There was an issue adding you to our newsletter. Please try again.",
+          variant: "destructive",
         });
+        return;
       }
 
       navigate("/thank-you");
