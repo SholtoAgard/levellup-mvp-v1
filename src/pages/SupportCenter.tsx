@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,10 +8,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Footer from "@/components/Footer";
+
 const SupportCenter = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+
   const menuContent = <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton className="w-full text-black" onClick={() => {
@@ -58,6 +61,7 @@ const SupportCenter = () => {
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>;
+
   return <SidebarProvider>
       <div className="min-h-screen flex w-full">
         {!isMobile && <Sidebar>
@@ -95,10 +99,13 @@ const SupportCenter = () => {
           <div className="p-8 flex-1">
             <div className="max-w-2xl mx-auto">
               <div className="flex items-center gap-6 mb-8">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage alt="Profile" src="/lovable-uploads/efa3cd88-e508-4aa3-920e-b4753e1ffdd5.jpg" />
-                  <AvatarFallback>YP</AvatarFallback>
-                </Avatar>
+                <div className="flex flex-col items-center gap-2">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage alt="Profile" src="/lovable-uploads/efa3cd88-e508-4aa3-920e-b4753e1ffdd5.jpg" />
+                    <AvatarFallback>YP</AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm font-medium text-gray-600">Ian Agard, founder of LevellUP</p>
+                </div>
                 <div>
                   <h1 className="text-4xl font-bold text-black">Need Help?</h1>
                   <p className="text-lg text-gray-700 mt-2">I'm here to help you succeed. Feel free to reach out to me anytime.</p>
@@ -117,4 +124,5 @@ const SupportCenter = () => {
       </div>
     </SidebarProvider>;
 };
+
 export default SupportCenter;
