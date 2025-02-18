@@ -102,6 +102,19 @@ const CheckoutForm = () => {
         throw new Error('No subscription data received');
       }
 
+      // Add user to onboarding email sequence
+      const { error: onboardingError } = await supabase.functions.invoke('add-trial-user', {
+        body: { 
+          email,
+          userId: user.id
+        }
+      });
+
+      if (onboardingError) {
+        console.error('Error adding to onboarding sequence:', onboardingError);
+        // Don't throw here as it's not critical to the signup process
+      }
+
       console.log('Subscription created successfully:', subscriptionData);
 
       toast({
