@@ -22,8 +22,28 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const { firstName, email }: SubscriberRequest = await req.json();
-    console.log(`Adding subscriber to MailerLite: ${email}`);
+    console.log(`Adding subscriber to MailerLite newsletter list: ${email}`);
 
+    // First, get the groups to find the newsletter list group ID
+    const groupsResponse = await fetch('https://connect.mailerlite.com/api/groups', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${MAILERLITE_API_KEY}`,
+      },
+    });
+
+    const groupsData = await groupsResponse.json();
+    console.log("MailerLite groups:", groupsData);
+
+    // Find the newsletter list group
+    const newsletterGroup = groupsData.data.find((group: any) => group.name === "newsletter list");
+    
+    if (!newsletterGroup) {
+      throw new Error("Newsletter list group not found in MailerLite. Please create a group named 'newsletter list'");
+    }
+
+    // Add subscriber using the group ID
     const response = await fetch('https://connect.mailerlite.com/api/subscribers', {
       method: 'POST',
       headers: {
@@ -36,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
         fields: {
           name: firstName,
         },
-        groups: [], // You can add group IDs here if needed
+        groups: [newsletterGroup.id],
         status: 'active',
       }),
     });
