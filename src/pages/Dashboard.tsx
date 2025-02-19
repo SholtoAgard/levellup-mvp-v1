@@ -17,28 +17,112 @@ const avatars = [
     name: "Chloe", 
     style: "SaaS Sales", 
     personality: "Friendly and professional SaaS sales representative",
-    voiceId: "EXAVITQu4vr4xnSDxMaL" // Sarah voice
+    voiceId: "EXAVITQu4vr4xnSDxMaL"
   },
   { 
     id: "noah", 
     name: "Noah", 
     style: "Enterprise", 
     personality: "Experienced enterprise software consultant",
-    voiceId: "TX3LPaxmHKxFdv7VOQHJ" // Liam voice
+    voiceId: "TX3LPaxmHKxFdv7VOQHJ"
   },
   { 
     id: "veronica", 
     name: "Veronica", 
     style: "B2B Sales", 
     personality: "Strategic B2B sales director",
-    voiceId: "pFZP5JQG7iQjIQuC4Bku" // Lily voice
+    voiceId: "pFZP5JQG7iQjIQuC4Bku"
   },
   { 
     id: "marcus", 
     name: "Marcus", 
     style: "Technical", 
     personality: "Technical sales engineer",
-    voiceId: "CwhRBWXzGAHq8TQ4Fs17" // Roger voice
+    voiceId: "CwhRBWXzGAHq8TQ4Fs17"
+  },
+  {
+    id: "sophia",
+    name: "Sophia",
+    style: "Product Demo",
+    personality: "Expert product demonstration specialist",
+    voiceId: "EXAVITQu4vr4xnSDxMaL"
+  },
+  {
+    id: "alex",
+    name: "Alex",
+    style: "Customer Success",
+    personality: "Empathetic customer success manager",
+    voiceId: "TX3LPaxmHKxFdv7VOQHJ"
+  },
+  {
+    id: "maya",
+    name: "Maya",
+    style: "Account Management",
+    personality: "Strategic account management professional",
+    voiceId: "pFZP5JQG7iQjIQuC4Bku"
+  },
+  {
+    id: "james",
+    name: "James",
+    style: "Solutions",
+    personality: "Solutions architect with deep technical knowledge",
+    voiceId: "CwhRBWXzGAHq8TQ4Fs17"
+  },
+  {
+    id: "emma",
+    name: "Emma",
+    style: "Startup Sales",
+    personality: "Dynamic startup sales specialist",
+    voiceId: "EXAVITQu4vr4xnSDxMaL"
+  },
+  {
+    id: "daniel",
+    name: "Daniel",
+    style: "Partner Sales",
+    personality: "Strategic partnership development manager",
+    voiceId: "TX3LPaxmHKxFdv7VOQHJ"
+  },
+  {
+    id: "lisa",
+    name: "Lisa",
+    style: "Healthcare Sales",
+    personality: "Healthcare industry sales expert",
+    voiceId: "pFZP5JQG7iQjIQuC4Bku"
+  },
+  {
+    id: "michael",
+    name: "Michael",
+    style: "Channel Sales",
+    personality: "Channel sales and distribution specialist",
+    voiceId: "CwhRBWXzGAHq8TQ4Fs17"
+  },
+  {
+    id: "sarah",
+    name: "Sarah",
+    style: "Financial Services",
+    personality: "Financial services sales professional",
+    voiceId: "EXAVITQu4vr4xnSDxMaL"
+  },
+  {
+    id: "ryan",
+    name: "Ryan",
+    style: "Tech Sales",
+    personality: "Technology solutions sales expert",
+    voiceId: "TX3LPaxmHKxFdv7VOQHJ"
+  },
+  {
+    id: "olivia",
+    name: "Olivia",
+    style: "Education Sales",
+    personality: "Educational technology sales specialist",
+    voiceId: "pFZP5JQG7iQjIQuC4Bku"
+  },
+  {
+    id: "david",
+    name: "David",
+    style: "Real Estate",
+    personality: "Real estate sales and consulting professional",
+    voiceId: "CwhRBWXzGAHq8TQ4Fs17"
   }
 ];
 
