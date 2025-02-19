@@ -1,35 +1,36 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
-import Dashboard from "@/pages/Dashboard";
 import Auth from "@/pages/Auth";
-import NotFound from "@/pages/NotFound";
-import RolePlay from "@/pages/RolePlay";
-import Feedback from "@/pages/Feedback";
+import Dashboard from "@/pages/Dashboard";
+import Account from "@/pages/Account";
 import Subscription from "@/pages/Subscription";
+import Feedback from "@/pages/Feedback";
+import RolePlay from "@/pages/RolePlay";
 import ThankYou from "@/pages/ThankYou";
 import SupportCenter from "@/pages/SupportCenter";
-import Account from "@/pages/Account";
-
+import NotFound from "@/pages/NotFound";
+import TermsOfService from "@/pages/TermsOfService";
 import "./App.css";
 
-function App() {
+const App = () => {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/roleplay" element={<RolePlay />} />
-        <Route path="/feedback" element={<Feedback />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/subscription" element={<Subscription />} />
+        <Route path="/feedback" element={<Feedback />} />
+        <Route path="/roleplay" element={<RolePlay />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/support" element={<SupportCenter />} />
-        <Route path="/account" element={<Account />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
-}
+};
 
 export default App;
