@@ -59,13 +59,17 @@ serve(async (req) => {
       
       // Store user message if session exists
       if (sessionId) {
-        await supabase
-          .from('roleplay_messages')
-          .insert({
-            session_id: sessionId,
-            role: 'user',
-            content: data.text
-          });
+        try {
+          await supabase
+            .from('roleplay_messages')
+            .insert({
+              session_id: sessionId,
+              role: 'user',
+              content: data.text
+            });
+        } catch (error) {
+          console.error('Error storing user message:', error);
+        }
       }
 
       // If we have context, get AI response
@@ -86,7 +90,7 @@ serve(async (req) => {
                      Respond naturally and conversationally, keeping responses concise.`
           },
           ...(previousMessages?.map(msg => ({
-            role: msg.role === 'user' ? 'user' : 'assistant',
+            role: msg.role,
             content: msg.content
           })) || []),
           {
@@ -107,13 +111,17 @@ serve(async (req) => {
 
         // Store AI response
         if (sessionId) {
-          await supabase
-            .from('roleplay_messages')
-            .insert({
-              session_id: sessionId,
-              role: 'assistant',
-              content: aiResponse
-            });
+          try {
+            await supabase
+              .from('roleplay_messages')
+              .insert({
+                session_id: sessionId,
+                role: 'assistant',
+                content: aiResponse
+              });
+          } catch (error) {
+            console.error('Error storing AI response:', error);
+          }
         }
 
         return new Response(
@@ -143,6 +151,7 @@ serve(async (req) => {
             model: 'tts-1',
             voice: 'alloy',
             input: text,
+            response_format: 'mp3'
           }),
         });
 
@@ -153,9 +162,8 @@ serve(async (req) => {
         }
 
         const arrayBuffer = await response.arrayBuffer();
-        const base64Audio = btoa(
-          String.fromCharCode(...new Uint8Array(arrayBuffer))
-        );
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const base64Audio = btoa(String.fromCharCode.apply(null, uint8Array));
 
         return new Response(
           JSON.stringify({ audioContent: base64Audio }),
