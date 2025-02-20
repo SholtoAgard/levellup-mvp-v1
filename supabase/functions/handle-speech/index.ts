@@ -1,6 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import OpenAI from "https://esm.sh/openai@4.20.1"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
@@ -15,6 +16,16 @@ serve(async (req) => {
 
   try {
     const { audio, type, text, voiceId, sessionId, context } = await req.json()
+
+    // Initialize OpenAI
+    const openai = new OpenAI({
+      apiKey: Deno.env.get('OPENAI_API_KEY')
+    });
+
+    // Initialize Supabase client if we need to store messages
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabase = createClient(supabaseUrl!, supabaseKey!);
 
     if (type === 'speech-to-text') {
       if (!audio) {
@@ -42,15 +53,10 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      console.log('Transcribed text:', data.text);
       
-      // If we have context, process the message through the roleplay handler
-      if (sessionId && context) {
-        const supabase = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        )
-
-        // Store user message
+      // Store user message if session exists
+      if (sessionId) {
         await supabase
           .from('roleplay_messages')
           .insert({
@@ -58,49 +64,42 @@ serve(async (req) => {
             role: 'user',
             content: data.text
           });
+      }
 
-        // Get AI response
-        const completion = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4',
-            messages: [
-              {
-                role: 'system',
-                content: `You are ${context.avatar_id}, an AI avatar engaged in a ${context.roleplay_type}. 
-                         Scenario: ${context.scenario_description}
-                         Respond naturally and conversationally, keeping responses concise.`
-              },
-              {
-                role: 'user',
-                content: data.text
-              }
-            ]
-          })
+      // If we have context, get AI response
+      if (context) {
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: `You are ${context.avatar_id}, engaged in a ${context.roleplay_type}. 
+                       Scenario: ${context.scenario_description}
+                       Respond naturally and conversationally, keeping responses concise.`
+            },
+            {
+              role: 'user',
+              content: data.text
+            }
+          ],
         });
 
-        if (!completion.ok) {
-          throw new Error('Failed to get AI response');
-        }
-
-        const aiResponse = await completion.json();
-        const aiMessage = aiResponse.choices[0].message.content;
+        const aiResponse = completion.choices[0].message.content;
+        console.log('AI response:', aiResponse);
 
         // Store AI response
-        await supabase
-          .from('roleplay_messages')
-          .insert({
-            session_id: sessionId,
-            role: 'ai',
-            content: aiMessage
-          });
+        if (sessionId) {
+          await supabase
+            .from('roleplay_messages')
+            .insert({
+              session_id: sessionId,
+              role: 'assistant',
+              content: aiResponse
+            });
+        }
 
         return new Response(
-          JSON.stringify({ text: data.text, response: aiMessage }),
+          JSON.stringify({ text: data.text, response: aiResponse }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -115,39 +114,29 @@ serve(async (req) => {
         throw new Error('Text is required for text-to-speech');
       }
 
-      const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
-          'Accept': 'audio/mpeg',
-          'xi-api-key': Deno.env.get('ELEVEN_LABS_API_KEY') || '',
+          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text,
-          model_id: "eleven_monolingual_v1",
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.5
-          }
+          model: 'tts-1',
+          voice: 'alloy',
+          input: text,
         }),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('ElevenLabs API error:', errorText);
-        throw new Error('Failed to generate speech: ' + errorText);
+        const errorData = await response.text();
+        console.error('Text-to-speech API error:', errorData);
+        throw new Error('Failed to generate speech: ' + errorData);
       }
 
       const arrayBuffer = await response.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      const chunks = [];
-      const chunkSize = 8192;
-      
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        chunks.push(String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize)));
-      }
-      
-      const base64Audio = btoa(chunks.join(''));
+      const base64Audio = btoa(
+        String.fromCharCode(...new Uint8Array(arrayBuffer))
+      );
 
       return new Response(
         JSON.stringify({ audioContent: base64Audio }),
