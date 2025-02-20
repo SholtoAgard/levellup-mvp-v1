@@ -1,8 +1,9 @@
+
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Send, Mic, StopCircle, Volume2, Award } from "lucide-react";
+import { Send, Mic, StopCircle, Volume2, Award, PhoneOff } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
@@ -240,6 +241,25 @@ const RolePlay = () => {
     }
   };
 
+  const handleEndCall = () => {
+    // Stop any ongoing recording or playback
+    if (isRecording) {
+      stopRecording();
+    }
+    if (isSpeaking) {
+      // You might want to add a way to stop the current audio playback
+      setIsSpeaking(false);
+    }
+    
+    // Navigate back to dashboard
+    navigate('/dashboard');
+    
+    toast({
+      title: "Call Ended",
+      description: "Your conversation has been saved.",
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="p-4 sm:p-8 flex-1">
@@ -256,15 +276,25 @@ const RolePlay = () => {
               </Button>
               <h1 className="text-xl sm:text-2xl font-bold">Role Play Session</h1>
             </div>
-            <Button
-              onClick={handleGetScore}
-              disabled={isLoading || messages.length < 4}
-              className="bg-amber-500 hover:bg-amber-600"
-              size={isMobile ? "sm" : "default"}
-            >
-              <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Get Your Score
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleEndCall}
+                variant="destructive"
+                size={isMobile ? "sm" : "default"}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
+              </Button>
+              <Button
+                onClick={handleGetScore}
+                disabled={isLoading || messages.length < 4}
+                className="bg-amber-500 hover:bg-amber-600"
+                size={isMobile ? "sm" : "default"}
+              >
+                <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                Get Your Score
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
