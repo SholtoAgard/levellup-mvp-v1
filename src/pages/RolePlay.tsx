@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { PhoneOff } from "lucide-react";
+import { Send, Mic, StopCircle, Volume2, Award } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
@@ -15,6 +15,7 @@ const RolePlay = () => {
   const { toast } = useToast();
   const session = location.state?.session as RoleplaySession;
   const [messages, setMessages] = useState<RoleplayMessage[]>([]);
+  const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -27,7 +28,7 @@ const RolePlay = () => {
       navigate('/dashboard');
       return;
     }
-    startRecording();
+    loadMessages();
   }, [session]);
 
   const loadMessages = async () => {
@@ -49,19 +50,61 @@ const RolePlay = () => {
     }
 
     if (data) {
-      setMessages(data as RoleplayMessage[]);
+      const typedMessages: RoleplayMessage[] = data.map(msg => ({
+        id: msg.id,
+        session_id: msg.session_id,
+        role: msg.role as 'user' | 'ai',
+        content: msg.content,
+        created_at: msg.created_at
+      }));
+      setMessages(typedMessages);
+    }
+  };
+
+  const sendMessage = async (text?: string) => {
+    if ((!text && !newMessage.trim()) || !session) return;
+
+    setIsLoading(true);
+    try {
+      const messageToSend = text || newMessage;
+      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
+        body: {
+          sessionId: session.id,
+          message: messageToSend,
+          context: session.status === 'in_progress' ? {
+            avatar_id: session.avatar_id,
+            roleplay_type: session.roleplay_type,
+            scenario_description: session.scenario_description
+          } : undefined
+        }
+      });
+
+      if (error) throw error;
+
+      setNewMessage("");
+      await loadMessages();
+      
+      if (data.response) {
+        await speakText(data.response);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send message",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const startRecording = async () => {
-    if (isRecording || isSpeaking) {
-      console.log('Already recording or speaking, skipping startRecording');
-      return;
-    }
-    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm',
+      });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -71,123 +114,37 @@ const RolePlay = () => {
         }
       };
 
-      let audioContext: AudioContext | null = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      source.connect(analyser);
-
-      let silenceCounter = 0;
-      const silenceThreshold = 50;
-      let voiceDetected = false;
-      let isChecking = true;
-
-      const checkAudio = () => {
-        if (!isChecking || !audioContext) return;
-
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-
-        if (average > 25) {
-          voiceDetected = true;
-          silenceCounter = 0;
-        } else if (voiceDetected) {
-          silenceCounter++;
-          if (silenceCounter > silenceThreshold) {
-            isChecking = false;
-            stopRecording();
-            source.disconnect();
-            analyser.disconnect();
-            audioContext.close();
-            audioContext = null;
-            return;
-          }
-        }
-        
-        requestAnimationFrame(checkAudio);
-      };
-
-      checkAudio();
-
       mediaRecorder.onstop = async () => {
-        if (chunksRef.current.length === 0) {
-          console.log('No audio data recorded');
-          setTimeout(startRecording, 1000); // Wait a second before starting again
-          return;
-        }
-
-        try {
-          const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-          const reader = new FileReader();
-          
-          reader.onloadend = async () => {
-            const base64Audio = reader.result?.toString().split(',')[1];
-            if (!base64Audio) {
-              throw new Error('Failed to convert audio to base64');
-            }
-
+        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result?.toString().split(',')[1];
+          if (base64Audio) {
             try {
-              setIsLoading(true);
-              console.log('Converting speech to text...');
-              const { data: speechData, error: speechError } = await supabase.functions.invoke('handle-speech', {
-                body: { 
-                  audio: base64Audio, 
-                  type: 'speech-to-text',
-                  sessionId: session?.id,
-                  context: session ? {
-                    avatar_id: session.avatar_id,
-                    roleplay_type: session.roleplay_type,
-                    scenario_description: session.scenario_description
-                  } : undefined
-                }
+              const { data, error } = await supabase.functions.invoke('handle-speech', {
+                body: { audio: base64Audio, type: 'speech-to-text' }
               });
 
-              if (speechError) {
-                console.error('Speech-to-text error:', speechError);
-                throw speechError;
+              if (error) throw error;
+              if (data.text) {
+                setNewMessage(data.text);
+                await sendMessage(data.text);
               }
-
-              if (!speechData?.text) {
-                throw new Error('No text transcribed');
-              }
-
-              if (!speechData?.response) {
-                throw new Error('No AI response received');
-              }
-
-              console.log('Speech converted to text:', speechData.text);
-              console.log('AI response:', speechData.response);
-
-              await loadMessages();
-              await speakText(speechData.response);
-            } catch (error: any) {
-              console.error('Error processing speech:', error);
+            } catch (error) {
+              console.error('Error converting speech to text:', error);
               toast({
                 title: "Error",
-                description: error.message || "Failed to process speech",
+                description: "Failed to convert speech to text",
                 variant: "destructive",
               });
-              if (!isSpeaking) {
-                setTimeout(startRecording, 1000); // Wait a second before starting again
-              }
-            } finally {
-              setIsLoading(false);
             }
-          };
-
-          reader.readAsDataURL(audioBlob);
-        } catch (error) {
-          console.error('Error processing audio blob:', error);
-          if (!isSpeaking) {
-            setTimeout(startRecording, 1000); // Wait a second before starting again
           }
-        }
+        };
       };
 
       mediaRecorder.start();
       setIsRecording(true);
-      console.log('Started recording');
     } catch (error) {
       console.error('Error accessing microphone:', error);
       toast({
@@ -199,24 +156,18 @@ const RolePlay = () => {
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
-      console.log('Stopped recording');
     }
   };
 
   const speakText = async (text: string) => {
-    if (isSpeaking) {
-      console.log('Already speaking, skipping text-to-speech');
-      return;
-    }
+    if (isSpeaking) return;
     
     try {
       setIsSpeaking(true);
-      console.log('Converting text to speech:', text);
-      
       const { data, error } = await supabase.functions.invoke('handle-speech', {
         body: { 
           text, 
@@ -225,67 +176,75 @@ const RolePlay = () => {
         }
       });
 
-      if (error) {
-        console.error('Text-to-speech error:', error);
-        throw error;
+      if (error) throw error;
+
+      if (data.audioContent) {
+        const binaryString = atob(data.audioContent);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audio = new Audio(audioUrl);
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        audio.onerror = (e) => {
+          console.error('Audio playback error:', e);
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        await audio.play();
       }
-
-      if (!data?.audioContent) {
-        throw new Error('No audio content received');
-      }
-
-      const binaryString = atob(data.audioContent);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      
-      audio.onended = () => {
-        console.log('Speech ended, starting recording again');
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-        setTimeout(startRecording, 1000); // Wait a second before starting recording
-      };
-
-      audio.onerror = (e) => {
-        console.error('Audio playback error:', e);
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-        setTimeout(startRecording, 1000); // Wait a second before starting recording
-      };
-
-      await audio.play();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error converting text to speech:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to convert text to speech",
+        description: "Failed to convert text to speech",
         variant: "destructive",
       });
       setIsSpeaking(false);
-      setTimeout(startRecording, 1000); // Wait a second before starting recording
     }
   };
 
-  const handleEndCall = () => {
-    stopRecording();
-    setIsSpeaking(false);
-    navigate('/dashboard');
-    toast({
-      title: "Call Ended",
-      description: "Your conversation has been saved.",
-    });
+  const handleGetScore = async () => {
+    if (!session) return;
+    
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
+        body: {
+          sessionId: session.id,
+          requestScoring: true
+        }
+      });
+
+      if (error) throw error;
+      
+      navigate(`/feedback/${session.id}`);
+    } catch (error) {
+      console.error('Error getting score:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate feedback",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <div className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-4 sm:mb-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-8 flex-wrap gap-4">
             <div className="flex items-center">
               <Button 
                 variant="ghost" 
@@ -295,29 +254,110 @@ const RolePlay = () => {
               >
                 ← Back
               </Button>
-              <h1 className="text-xl sm:text-2xl font-bold">Call with {session?.avatar_id}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">Role Play Session</h1>
             </div>
             <Button
-              onClick={handleEndCall}
-              variant="destructive"
+              onClick={handleGetScore}
+              disabled={isLoading || messages.length < 4}
+              className="bg-amber-500 hover:bg-amber-600"
               size={isMobile ? "sm" : "default"}
-              className="bg-red-500 hover:bg-red-600"
             >
-              <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              Get Your Score
             </Button>
           </div>
 
-          <div className="flex justify-center items-center h-[60vh]">
-            <div className="text-center">
-              <Avatar className="w-48 h-48 sm:w-64 sm:h-64 mx-auto mb-8">
-                <AvatarImage 
-                  src={session?.avatar_id ? supabase.storage
-                    .from('avatars')
-                    .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl : ''}
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+            <div className="w-full lg:w-1/3">
+              {session?.avatar_id && (
+                <div className="text-center bg-gray-50 p-4 rounded-lg">
+                  <Avatar className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4">
+                    <AvatarImage 
+                      src={supabase.storage
+                        .from('avatars')
+                        .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl}
+                    />
+                  </Avatar>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                    {session.avatar_id}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    {session.roleplay_type}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="w-full lg:w-2/3 flex flex-col">
+              <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg min-h-[300px] sm:min-h-[400px] bg-white">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[85%] sm:max-w-[80%] p-3 sm:p-4 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-[#1E90FF] text-white'
+                          : 'bg-gray-100 text-gray-900'
+                      } relative group`}
+                    >
+                      {message.content}
+                      {message.role === 'ai' && (
+                        <Button
+                          className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                          variant="secondary"
+                          size="icon"
+                          onClick={() => speakText(message.content)}
+                        >
+                          <Volume2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 sm:gap-4">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 p-2 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
                 />
-              </Avatar>
-              <div className="text-lg text-gray-600">
-                {isRecording ? "Listening..." : isSpeaking ? "Speaking..." : "..."}
+                <Button
+                  className={`${isRecording ? 'bg-red-500' : 'bg-blue-500'} hover:bg-opacity-90 text-white`}
+                  size={isMobile ? "icon" : "default"}
+                  onClick={isRecording ? stopRecording : startRecording}
+                >
+                  {isRecording ? (
+                    <StopCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  ) : (
+                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                </Button>
+                <Button
+                  className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+                  onClick={() => sendMessage()}
+                  disabled={isLoading}
+                  size={isMobile ? "icon" : "default"}
+                >
+                  {isLoading ? (
+                    "..."
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                      {!isMobile && <span className="ml-2">Send</span>}
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
