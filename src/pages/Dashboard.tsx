@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -309,7 +310,13 @@ const Dashboard = () => {
         feedback: session.feedback || undefined
       };
       
-      navigate('/roleplay', { state: { session: typedSession } });
+      // Special handling for David in discovery call
+      if (selectedAvatar === 'david' && selectedRolePlay === 'discovery call') {
+        navigate('/start-call', { state: { session: typedSession } });
+      } else {
+        navigate('/roleplay', { state: { session: typedSession } });
+      }
+
       toast({
         title: "Roleplay Started",
         description: "You can now begin your conversation with the AI.",
