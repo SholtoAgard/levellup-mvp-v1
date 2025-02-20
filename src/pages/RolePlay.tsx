@@ -54,7 +54,10 @@ const RolePlay = () => {
   };
 
   const startRecording = async () => {
-    if (isRecording || isSpeaking) return;
+    if (isRecording || isSpeaking) {
+      console.log('Already recording or speaking, skipping startRecording');
+      return;
+    }
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -110,7 +113,7 @@ const RolePlay = () => {
       mediaRecorder.onstop = async () => {
         if (chunksRef.current.length === 0) {
           console.log('No audio data recorded');
-          startRecording();
+          setTimeout(startRecording, 1000); // Wait a second before starting again
           return;
         }
 
@@ -166,7 +169,7 @@ const RolePlay = () => {
                 variant: "destructive",
               });
               if (!isSpeaking) {
-                startRecording();
+                setTimeout(startRecording, 1000); // Wait a second before starting again
               }
             } finally {
               setIsLoading(false);
@@ -177,7 +180,7 @@ const RolePlay = () => {
         } catch (error) {
           console.error('Error processing audio blob:', error);
           if (!isSpeaking) {
-            startRecording();
+            setTimeout(startRecording, 1000); // Wait a second before starting again
           }
         }
       };
@@ -205,7 +208,10 @@ const RolePlay = () => {
   };
 
   const speakText = async (text: string) => {
-    if (isSpeaking) return;
+    if (isSpeaking) {
+      console.log('Already speaking, skipping text-to-speech');
+      return;
+    }
     
     try {
       setIsSpeaking(true);
@@ -239,16 +245,17 @@ const RolePlay = () => {
       const audio = new Audio(audioUrl);
       
       audio.onended = () => {
+        console.log('Speech ended, starting recording again');
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
-        startRecording();
+        setTimeout(startRecording, 1000); // Wait a second before starting recording
       };
 
       audio.onerror = (e) => {
         console.error('Audio playback error:', e);
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
-        startRecording();
+        setTimeout(startRecording, 1000); // Wait a second before starting recording
       };
 
       await audio.play();
@@ -260,7 +267,7 @@ const RolePlay = () => {
         variant: "destructive",
       });
       setIsSpeaking(false);
-      startRecording();
+      setTimeout(startRecording, 1000); // Wait a second before starting recording
     }
   };
 
