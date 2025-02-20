@@ -50,59 +50,7 @@ const RolePlay = () => {
     }
 
     if (data) {
-      const typedMessages: RoleplayMessage[] = data.map(msg => ({
-        id: msg.id,
-        session_id: msg.session_id,
-        role: msg.role as 'user' | 'ai',
-        content: msg.content,
-        created_at: msg.created_at
-      }));
-      setMessages(typedMessages);
-    }
-  };
-
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || !session) return;
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('handle-speech', {
-        body: { 
-          text, 
-          type: 'text-to-speech',
-          voiceId: session?.avatar_voice_id,
-          sessionId: session.id,
-          context: {
-            avatar_id: session.avatar_id,
-            roleplay_type: session.roleplay_type,
-            scenario_description: session.scenario_description
-          }
-        }
-      });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-
-      await loadMessages();
-      
-      if (data.response) {
-        await speakText(data.response);
-        // Restart recording after AI finishes speaking
-        startRecording();
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send message",
-        variant: "destructive",
-      });
-      // Restart recording even if there's an error
-      startRecording();
-    } finally {
-      setIsLoading(false);
+      setMessages(data as RoleplayMessage[]);
     }
   };
 
@@ -121,40 +69,41 @@ const RolePlay = () => {
         }
       };
 
-      // Set up voice activity detection
-      const audioContext = new AudioContext();
+      let audioContext: AudioContext | null = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
       source.connect(analyser);
 
       let silenceCounter = 0;
-      const silenceThreshold = 30; // Number of consecutive silent frames before stopping
+      const silenceThreshold = 50;
       let voiceDetected = false;
+      let isChecking = true;
 
       const checkAudio = () => {
+        if (!isChecking || !audioContext) return;
+
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
-        if (average > 20) { // Voice detected
+        if (average > 25) {
           voiceDetected = true;
           silenceCounter = 0;
-        } else if (voiceDetected) { // Count silence after voice was detected
+        } else if (voiceDetected) {
           silenceCounter++;
           if (silenceCounter > silenceThreshold) {
-            // Stop recording after enough silence
+            isChecking = false;
             stopRecording();
             source.disconnect();
             analyser.disconnect();
             audioContext.close();
+            audioContext = null;
             return;
           }
         }
         
-        if (isRecording && !isSpeaking) {
-          requestAnimationFrame(checkAudio);
-        }
+        requestAnimationFrame(checkAudio);
       };
 
       checkAudio();
@@ -166,57 +115,50 @@ const RolePlay = () => {
           return;
         }
 
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = async () => {
-          const base64Audio = reader.result?.toString().split(',')[1];
-          if (base64Audio) {
+        try {
+          const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const reader = new FileReader();
+          
+          reader.onloadend = async () => {
+            const base64Audio = reader.result?.toString().split(',')[1];
+            if (!base64Audio) return;
+
             try {
-              console.log('Sending audio to speech-to-text...');
-              const { data, error } = await supabase.functions.invoke('handle-speech', {
+              console.log('Converting speech to text...');
+              const { data: speechData, error: speechError } = await supabase.functions.invoke('handle-speech', {
                 body: { 
                   audio: base64Audio, 
-                  type: 'speech-to-text',
-                  sessionId: session?.id,
-                  context: session ? {
-                    avatar_id: session.avatar_id,
-                    roleplay_type: session.roleplay_type,
-                    scenario_description: session.scenario_description
-                  } : undefined
+                  type: 'speech-to-text'
                 }
               });
 
-              if (error) {
-                console.error('Speech-to-text error:', error);
-                throw error;
-              }
+              if (speechError) throw speechError;
+              if (!speechData?.text) throw new Error('No text transcribed');
 
-              if (data.text) {
-                console.log('Successfully converted speech to text:', data.text);
-                // Send the transcribed text to get AI response
-                const response = await supabase.functions.invoke('handle-speech', {
-                  body: { 
-                    text: data.text, 
-                    type: 'text-to-speech',
-                    voiceId: session?.avatar_voice_id,
-                    sessionId: session?.id,
-                    context: {
-                      avatar_id: session?.avatar_id,
-                      roleplay_type: session?.roleplay_type,
-                      scenario_description: session?.scenario_description
-                    }
+              console.log('Speech converted to text:', speechData.text);
+
+              const { data: aiData, error: aiError } = await supabase.functions.invoke('handle-speech', {
+                body: { 
+                  text: speechData.text, 
+                  type: 'text-to-speech',
+                  voiceId: session?.avatar_voice_id,
+                  sessionId: session?.id,
+                  context: {
+                    avatar_id: session?.avatar_id,
+                    roleplay_type: session?.roleplay_type,
+                    scenario_description: session?.scenario_description
                   }
-                });
-
-                if (response.error) throw response.error;
-                if (response.data?.response) {
-                  console.log('Got AI response:', response.data.response);
-                  await speakText(response.data.response);
                 }
-              }
+              });
+
+              if (aiError) throw aiError;
+              if (!aiData?.response) throw new Error('No AI response received');
+
+              console.log('Received AI response:', aiData.response);
+              await loadMessages();
+              await speakText(aiData.response);
             } catch (error) {
-              console.error('Error processing speech:', error);
+              console.error('Error processing audio:', error);
               toast({
                 title: "Error",
                 description: "Failed to process speech",
@@ -227,8 +169,15 @@ const RolePlay = () => {
                 startRecording();
               }
             }
+          };
+
+          reader.readAsDataURL(audioBlob);
+        } catch (error) {
+          console.error('Error processing audio blob:', error);
+          if (!isSpeaking) {
+            startRecording();
           }
-        };
+        }
       };
 
       mediaRecorder.start();
@@ -245,10 +194,11 @@ const RolePlay = () => {
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
+      console.log('Stopped recording');
     }
   };
 
@@ -257,6 +207,8 @@ const RolePlay = () => {
     
     try {
       setIsSpeaking(true);
+      console.log('Converting text to speech:', text);
+      
       const { data, error } = await supabase.functions.invoke('handle-speech', {
         body: { 
           text, 
@@ -269,26 +221,28 @@ const RolePlay = () => {
 
       if (data.audioContent) {
         const binaryString = atob(data.audioContent);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        
-        for (let i = 0; i < len; i++) {
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
         
         const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
         const audioUrl = URL.createObjectURL(audioBlob);
-        
         const audio = new Audio(audioUrl);
+        
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
+          startRecording();
         };
+
         audio.onerror = (e) => {
           console.error('Audio playback error:', e);
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
+          startRecording();
         };
+
         await audio.play();
       }
     } catch (error) {
@@ -299,21 +253,14 @@ const RolePlay = () => {
         variant: "destructive",
       });
       setIsSpeaking(false);
+      startRecording();
     }
   };
 
   const handleEndCall = () => {
-    // Stop any ongoing recording or playback
-    if (isRecording) {
-      stopRecording();
-    }
-    if (isSpeaking) {
-      setIsSpeaking(false);
-    }
-    
-    // Navigate back to dashboard
+    stopRecording();
+    setIsSpeaking(false);
     navigate('/dashboard');
-    
     toast({
       title: "Call Ended",
       description: "Your conversation has been saved.",
