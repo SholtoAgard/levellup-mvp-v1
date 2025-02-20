@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -121,53 +120,56 @@ const RolePlay = () => {
           
           reader.onloadend = async () => {
             const base64Audio = reader.result?.toString().split(',')[1];
-            if (!base64Audio) return;
+            if (!base64Audio) {
+              throw new Error('Failed to convert audio to base64');
+            }
 
             try {
+              setIsLoading(true);
               console.log('Converting speech to text...');
               const { data: speechData, error: speechError } = await supabase.functions.invoke('handle-speech', {
                 body: { 
                   audio: base64Audio, 
-                  type: 'speech-to-text'
+                  type: 'speech-to-text',
+                  sessionId: session?.id,
+                  context: session ? {
+                    avatar_id: session.avatar_id,
+                    roleplay_type: session.roleplay_type,
+                    scenario_description: session.scenario_description
+                  } : undefined
                 }
               });
 
-              if (speechError) throw speechError;
-              if (!speechData?.text) throw new Error('No text transcribed');
+              if (speechError) {
+                console.error('Speech-to-text error:', speechError);
+                throw speechError;
+              }
+
+              if (!speechData?.text) {
+                throw new Error('No text transcribed');
+              }
+
+              if (!speechData?.response) {
+                throw new Error('No AI response received');
+              }
 
               console.log('Speech converted to text:', speechData.text);
+              console.log('AI response:', speechData.response);
 
-              const { data: aiData, error: aiError } = await supabase.functions.invoke('handle-speech', {
-                body: { 
-                  text: speechData.text, 
-                  type: 'text-to-speech',
-                  voiceId: session?.avatar_voice_id,
-                  sessionId: session?.id,
-                  context: {
-                    avatar_id: session?.avatar_id,
-                    roleplay_type: session?.roleplay_type,
-                    scenario_description: session?.scenario_description
-                  }
-                }
-              });
-
-              if (aiError) throw aiError;
-              if (!aiData?.response) throw new Error('No AI response received');
-
-              console.log('Received AI response:', aiData.response);
               await loadMessages();
-              await speakText(aiData.response);
-            } catch (error) {
-              console.error('Error processing audio:', error);
+              await speakText(speechData.response);
+            } catch (error: any) {
+              console.error('Error processing speech:', error);
               toast({
                 title: "Error",
-                description: "Failed to process speech",
+                description: error.message || "Failed to process speech",
                 variant: "destructive",
               });
-            } finally {
               if (!isSpeaking) {
                 startRecording();
               }
+            } finally {
+              setIsLoading(false);
             }
           };
 
@@ -217,39 +219,44 @@ const RolePlay = () => {
         }
       });
 
-      if (error) throw error;
-
-      if (data.audioContent) {
-        const binaryString = atob(data.audioContent);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        
-        audio.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-          startRecording();
-        };
-
-        audio.onerror = (e) => {
-          console.error('Audio playback error:', e);
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-          startRecording();
-        };
-
-        await audio.play();
+      if (error) {
+        console.error('Text-to-speech error:', error);
+        throw error;
       }
-    } catch (error) {
+
+      if (!data?.audioContent) {
+        throw new Error('No audio content received');
+      }
+
+      const binaryString = atob(data.audioContent);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        startRecording();
+      };
+
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        startRecording();
+      };
+
+      await audio.play();
+    } catch (error: any) {
       console.error('Error converting text to speech:', error);
       toast({
         title: "Error",
-        description: "Failed to convert text to speech",
+        description: error.message || "Failed to convert text to speech",
         variant: "destructive",
       });
       setIsSpeaking(false);
