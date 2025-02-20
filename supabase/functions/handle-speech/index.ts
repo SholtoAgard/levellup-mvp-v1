@@ -49,7 +49,9 @@ serve(async (req) => {
       });
 
       if (!response.ok) {
-        throw new Error(`Whisper API error: ${await response.text()}`);
+        const errorText = await response.text();
+        console.error('Whisper API error:', errorText);
+        throw new Error(`Whisper API error: ${errorText}`);
       }
 
       const data = await response.json();
@@ -68,20 +70,36 @@ serve(async (req) => {
 
       // If we have context, get AI response
       if (context) {
+        // Get previous messages for context
+        const { data: previousMessages } = await supabase
+          .from('roleplay_messages')
+          .select('content, role')
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: true })
+          .limit(10);
+
+        const messages = [
+          {
+            role: 'system',
+            content: `You are ${context.avatar_id}, engaged in a ${context.roleplay_type}. 
+                     Scenario: ${context.scenario_description}
+                     Respond naturally and conversationally, keeping responses concise.`
+          },
+          ...(previousMessages?.map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          })) || []),
+          {
+            role: 'user',
+            content: data.text
+          }
+        ];
+
         const completion = await openai.chat.completions.create({
           model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: `You are ${context.avatar_id}, engaged in a ${context.roleplay_type}. 
-                       Scenario: ${context.scenario_description}
-                       Respond naturally and conversationally, keeping responses concise.`
-            },
-            {
-              role: 'user',
-              content: data.text
-            }
-          ],
+          messages: messages,
+          temperature: 0.7,
+          max_tokens: 150
         });
 
         const aiResponse = completion.choices[0].message.content;
@@ -114,34 +132,39 @@ serve(async (req) => {
         throw new Error('Text is required for text-to-speech');
       }
 
-      const response = await fetch('https://api.openai.com/v1/audio/speech', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'tts-1',
-          voice: 'alloy',
-          input: text,
-        }),
-      });
+      try {
+        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'tts-1',
+            voice: 'alloy',
+            input: text,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Text-to-speech API error:', errorData);
-        throw new Error('Failed to generate speech: ' + errorData);
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error('Text-to-speech API error:', errorData);
+          throw new Error('Failed to generate speech: ' + errorData);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const base64Audio = btoa(
+          String.fromCharCode(...new Uint8Array(arrayBuffer))
+        );
+
+        return new Response(
+          JSON.stringify({ audioContent: base64Audio }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('Error in text-to-speech:', error);
+        throw error;
       }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const base64Audio = btoa(
-        String.fromCharCode(...new Uint8Array(arrayBuffer))
-      );
-
-      return new Response(
-        JSON.stringify({ audioContent: base64Audio }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
     throw new Error('Invalid type specified');
