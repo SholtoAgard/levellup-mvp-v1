@@ -124,36 +124,42 @@ const RolePlay = () => {
       // Set up voice activity detection
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
-      const processor = audioContext.createScriptProcessor(2048, 1, 1);
       const analyser = audioContext.createAnalyser();
-      
+      analyser.fftSize = 256;
       source.connect(analyser);
-      analyser.connect(processor);
-      processor.connect(audioContext.destination);
 
-      let silenceTimeout: NodeJS.Timeout | null = null;
-      const silenceDuration = 1500; // 1.5 seconds of silence before stopping
-      
-      processor.onaudioprocess = () => {
-        const array = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(array);
-        const average = array.reduce((a, b) => a + b) / array.length;
-        
-        if (average > 10) { // Voice detected
-          if (silenceTimeout) {
-            clearTimeout(silenceTimeout);
-            silenceTimeout = null;
-          }
-        } else if (!silenceTimeout) { // Silence detected
-          silenceTimeout = setTimeout(() => {
+      let silenceStart: number | null = null;
+      const silenceThreshold = 1500; // 1.5 seconds
+      let speaking = false;
+
+      const checkAudio = () => {
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+        if (average > 15) { // Voice detected
+          speaking = true;
+          silenceStart = null;
+        } else if (speaking) { // Silence after speaking
+          const currentTime = Date.now();
+          if (!silenceStart) {
+            silenceStart = currentTime;
+          } else if (currentTime - silenceStart > silenceThreshold) {
+            // Stop recording after silence threshold
             stopRecording();
-            processor.disconnect();
-            analyser.disconnect();
             source.disconnect();
+            analyser.disconnect();
             audioContext.close();
-          }, silenceDuration);
+            return;
+          }
+        }
+        
+        if (!isSpeaking) {
+          requestAnimationFrame(checkAudio);
         }
       };
+
+      checkAudio();
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
@@ -164,22 +170,35 @@ const RolePlay = () => {
           if (base64Audio) {
             try {
               const { data, error } = await supabase.functions.invoke('handle-speech', {
-                body: { audio: base64Audio, type: 'speech-to-text' }
+                body: { 
+                  audio: base64Audio, 
+                  type: 'speech-to-text',
+                  sessionId: session?.id,
+                  context: session ? {
+                    avatar_id: session.avatar_id,
+                    roleplay_type: session.roleplay_type,
+                    scenario_description: session.scenario_description
+                  } : undefined
+                }
               });
 
               if (error) throw error;
-              if (data.text) {
-                await sendMessage(data.text);
+              if (data.text && data.response) {
+                console.log('Transcribed text:', data.text);
+                console.log('AI response:', data.response);
+                await speakText(data.response);
               }
             } catch (error) {
-              console.error('Error converting speech to text:', error);
+              console.error('Error processing speech:', error);
               toast({
                 title: "Error",
-                description: "Failed to convert speech to text",
+                description: "Failed to process speech",
                 variant: "destructive",
               });
-              // Restart recording even if there's an error
-              startRecording();
+            } finally {
+              if (!isSpeaking) {
+                startRecording();
+              }
             }
           }
         };
@@ -187,6 +206,7 @@ const RolePlay = () => {
 
       mediaRecorder.start();
       setIsRecording(true);
+      console.log('Started recording');
     } catch (error) {
       console.error('Error accessing microphone:', error);
       toast({
