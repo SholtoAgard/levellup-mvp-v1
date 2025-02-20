@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Send, Mic, StopCircle, Volume2, Award, PhoneOff } from "lucide-react";
+import { PhoneOff } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
@@ -16,7 +16,6 @@ const RolePlay = () => {
   const { toast } = useToast();
   const session = location.state?.session as RoleplaySession;
   const [messages, setMessages] = useState<RoleplayMessage[]>([]);
-  const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -29,7 +28,7 @@ const RolePlay = () => {
       navigate('/dashboard');
       return;
     }
-    loadMessages();
+    startRecording();
   }, [session]);
 
   const loadMessages = async () => {
@@ -62,16 +61,15 @@ const RolePlay = () => {
     }
   };
 
-  const sendMessage = async (text?: string) => {
-    if ((!text && !newMessage.trim()) || !session) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || !session) return;
 
     setIsLoading(true);
     try {
-      const messageToSend = text || newMessage;
       const { data, error } = await supabase.functions.invoke('handle-roleplay', {
         body: {
           sessionId: session.id,
-          message: messageToSend,
+          message: text,
           context: session.status === 'in_progress' ? {
             avatar_id: session.avatar_id,
             roleplay_type: session.roleplay_type,
@@ -82,11 +80,12 @@ const RolePlay = () => {
 
       if (error) throw error;
 
-      setNewMessage("");
       await loadMessages();
       
       if (data.response) {
         await speakText(data.response);
+        // Restart recording after AI finishes speaking
+        startRecording();
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -101,6 +100,8 @@ const RolePlay = () => {
   };
 
   const startRecording = async () => {
+    if (isRecording || isSpeaking) return;
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, {
@@ -112,6 +113,40 @@ const RolePlay = () => {
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
+        }
+      };
+
+      // Set up voice activity detection
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const processor = audioContext.createScriptProcessor(2048, 1, 1);
+      const analyser = audioContext.createAnalyser();
+      
+      source.connect(analyser);
+      analyser.connect(processor);
+      processor.connect(audioContext.destination);
+
+      let silenceTimeout: NodeJS.Timeout | null = null;
+      const silenceDuration = 1500; // 1.5 seconds of silence before stopping
+      
+      processor.onaudioprocess = () => {
+        const array = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(array);
+        const average = array.reduce((a, b) => a + b) / array.length;
+        
+        if (average > 10) { // Voice detected
+          if (silenceTimeout) {
+            clearTimeout(silenceTimeout);
+            silenceTimeout = null;
+          }
+        } else if (!silenceTimeout) { // Silence detected
+          silenceTimeout = setTimeout(() => {
+            stopRecording();
+            processor.disconnect();
+            analyser.disconnect();
+            source.disconnect();
+            audioContext.close();
+          }, silenceDuration);
         }
       };
 
@@ -129,7 +164,6 @@ const RolePlay = () => {
 
               if (error) throw error;
               if (data.text) {
-                setNewMessage(data.text);
                 await sendMessage(data.text);
               }
             } catch (error) {
@@ -139,6 +173,7 @@ const RolePlay = () => {
                 description: "Failed to convert speech to text",
                 variant: "destructive",
               });
+              startRecording(); // Restart recording even if there's an error
             }
           }
         };
@@ -214,40 +249,12 @@ const RolePlay = () => {
     }
   };
 
-  const handleGetScore = async () => {
-    if (!session) return;
-    
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
-        body: {
-          sessionId: session.id,
-          requestScoring: true
-        }
-      });
-
-      if (error) throw error;
-      
-      navigate(`/feedback/${session.id}`);
-    } catch (error) {
-      console.error('Error getting score:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate feedback",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleEndCall = () => {
     // Stop any ongoing recording or playback
     if (isRecording) {
       stopRecording();
     }
     if (isSpeaking) {
-      // You might want to add a way to stop the current audio playback
       setIsSpeaking(false);
     }
     
@@ -264,7 +271,7 @@ const RolePlay = () => {
     <div className="min-h-screen flex flex-col">
       <div className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-4 sm:mb-8 flex-wrap gap-4">
+          <div className="flex items-center justify-between mb-4 sm:mb-8">
             <div className="flex items-center">
               <Button 
                 variant="ghost" 
@@ -274,120 +281,29 @@ const RolePlay = () => {
               >
                 ← Back
               </Button>
-              <h1 className="text-xl sm:text-2xl font-bold">Role Play Session</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">Call with {session?.avatar_id}</h1>
             </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleEndCall}
-                variant="destructive"
-                size={isMobile ? "sm" : "default"}
-                className="bg-red-500 hover:bg-red-600"
-              >
-                <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Button>
-              <Button
-                onClick={handleGetScore}
-                disabled={isLoading || messages.length < 4}
-                className="bg-amber-500 hover:bg-amber-600"
-                size={isMobile ? "sm" : "default"}
-              >
-                <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                Get Your Score
-              </Button>
-            </div>
+            <Button
+              onClick={handleEndCall}
+              variant="destructive"
+              size={isMobile ? "sm" : "default"}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-            <div className="w-full lg:w-1/3">
-              {session?.avatar_id && (
-                <div className="text-center bg-gray-50 p-4 rounded-lg">
-                  <Avatar className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4">
-                    <AvatarImage 
-                      src={supabase.storage
-                        .from('avatars')
-                        .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl}
-                    />
-                  </Avatar>
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2">
-                    {session.avatar_id}
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    {session.roleplay_type}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="w-full lg:w-2/3 flex flex-col">
-              <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg min-h-[300px] sm:min-h-[400px] bg-white">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[85%] sm:max-w-[80%] p-3 sm:p-4 rounded-lg ${
-                        message.role === 'user'
-                          ? 'bg-[#1E90FF] text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      } relative group`}
-                    >
-                      {message.content}
-                      {message.role === 'ai' && (
-                        <Button
-                          className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                          variant="secondary"
-                          size="icon"
-                          onClick={() => speakText(message.content)}
-                        >
-                          <Volume2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2 sm:gap-4">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 p-2 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
+          <div className="flex justify-center items-center h-[60vh]">
+            <div className="text-center">
+              <Avatar className="w-48 h-48 sm:w-64 sm:h-64 mx-auto mb-8">
+                <AvatarImage 
+                  src={session?.avatar_id ? supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl : ''}
                 />
-                <Button
-                  className={`${isRecording ? 'bg-red-500' : 'bg-blue-500'} hover:bg-opacity-90 text-white`}
-                  size={isMobile ? "icon" : "default"}
-                  onClick={isRecording ? stopRecording : startRecording}
-                >
-                  {isRecording ? (
-                    <StopCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                  ) : (
-                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
-                  )}
-                </Button>
-                <Button
-                  className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
-                  onClick={() => sendMessage()}
-                  disabled={isLoading}
-                  size={isMobile ? "icon" : "default"}
-                >
-                  {isLoading ? (
-                    "..."
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                      {!isMobile && <span className="ml-2">Send</span>}
-                    </>
-                  )}
-                </Button>
+              </Avatar>
+              <div className="text-lg text-gray-600">
+                {isRecording ? "Listening..." : isSpeaking ? "Speaking..." : "..."}
               </div>
             </div>
           </div>
