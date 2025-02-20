@@ -1,6 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audio, type, text, voiceId } = await req.json()
+    const { audio, type, text, voiceId, sessionId, context } = await req.json()
 
     if (type === 'speech-to-text') {
       if (!audio) {
@@ -24,7 +25,6 @@ serve(async (req) => {
       const audioData = new Uint8Array(atob(audio).split('').map(char => char.charCodeAt(0)));
       const blob = new Blob([audioData], { type: 'audio/webm' });
       
-      // Create form data for Whisper API
       const formData = new FormData();
       formData.append('file', blob, 'audio.webm');
       formData.append('model', 'whisper-1');
@@ -42,15 +42,78 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      return new Response(JSON.stringify({ text: data.text }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } else if (type === 'text-to-speech') {
-      if (!text || !voiceId) {
-        throw new Error('Text and voiceId are required for text-to-speech');
+      
+      // If we have context, process the message through the roleplay handler
+      if (sessionId && context) {
+        const supabase = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        )
+
+        // Store user message
+        await supabase
+          .from('roleplay_messages')
+          .insert({
+            session_id: sessionId,
+            role: 'user',
+            content: data.text
+          });
+
+        // Get AI response
+        const completion = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: `You are ${context.avatar_id}, an AI avatar engaged in a ${context.roleplay_type}. 
+                         Scenario: ${context.scenario_description}
+                         Respond naturally and conversationally, keeping responses concise.`
+              },
+              {
+                role: 'user',
+                content: data.text
+              }
+            ]
+          })
+        });
+
+        if (!completion.ok) {
+          throw new Error('Failed to get AI response');
+        }
+
+        const aiResponse = await completion.json();
+        const aiMessage = aiResponse.choices[0].message.content;
+
+        // Store AI response
+        await supabase
+          .from('roleplay_messages')
+          .insert({
+            session_id: sessionId,
+            role: 'ai',
+            content: aiMessage
+          });
+
+        return new Response(
+          JSON.stringify({ text: data.text, response: aiMessage }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
-      console.log('Making text-to-speech request with:', { text, voiceId });
+      return new Response(
+        JSON.stringify({ text: data.text }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } else if (type === 'text-to-speech') {
+      if (!text) {
+        throw new Error('Text is required for text-to-speech');
+      }
 
       const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
         method: 'POST',
@@ -75,11 +138,10 @@ serve(async (req) => {
         throw new Error('Failed to generate speech: ' + errorText);
       }
 
-      // Use chunks to handle large audio files
       const arrayBuffer = await response.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
       const chunks = [];
-      const chunkSize = 8192;  // Process data in smaller chunks
+      const chunkSize = 8192;
       
       for (let i = 0; i < bytes.length; i += chunkSize) {
         chunks.push(String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize)));
@@ -89,7 +151,7 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ audioContent: base64Audio }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

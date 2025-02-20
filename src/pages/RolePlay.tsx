@@ -66,19 +66,24 @@ const RolePlay = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
-        body: {
+      const { data, error } = await supabase.functions.invoke('handle-speech', {
+        body: { 
+          text, 
+          type: 'text-to-speech',
+          voiceId: session?.avatar_voice_id,
           sessionId: session.id,
-          message: text,
-          context: session.status === 'in_progress' ? {
+          context: {
             avatar_id: session.avatar_id,
             roleplay_type: session.roleplay_type,
             scenario_description: session.scenario_description
-          } : undefined
+          }
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
       await loadMessages();
       
@@ -94,6 +99,8 @@ const RolePlay = () => {
         description: error instanceof Error ? error.message : "Failed to send message",
         variant: "destructive",
       });
+      // Restart recording even if there's an error
+      startRecording();
     } finally {
       setIsLoading(false);
     }
@@ -104,9 +111,7 @@ const RolePlay = () => {
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
-      });
+      const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -173,7 +178,8 @@ const RolePlay = () => {
                 description: "Failed to convert speech to text",
                 variant: "destructive",
               });
-              startRecording(); // Restart recording even if there's an error
+              // Restart recording even if there's an error
+              startRecording();
             }
           }
         };
