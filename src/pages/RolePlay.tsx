@@ -125,27 +125,25 @@ const RolePlay = () => {
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
+      analyser.fftSize = 2048;
       source.connect(analyser);
 
-      let silenceStart: number | null = null;
-      const silenceThreshold = 1500; // 1.5 seconds
-      let speaking = false;
+      let silenceCounter = 0;
+      const silenceThreshold = 30; // Number of consecutive silent frames before stopping
+      let voiceDetected = false;
 
       const checkAudio = () => {
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
-        if (average > 15) { // Voice detected
-          speaking = true;
-          silenceStart = null;
-        } else if (speaking) { // Silence after speaking
-          const currentTime = Date.now();
-          if (!silenceStart) {
-            silenceStart = currentTime;
-          } else if (currentTime - silenceStart > silenceThreshold) {
-            // Stop recording after silence threshold
+        if (average > 20) { // Voice detected
+          voiceDetected = true;
+          silenceCounter = 0;
+        } else if (voiceDetected) { // Count silence after voice was detected
+          silenceCounter++;
+          if (silenceCounter > silenceThreshold) {
+            // Stop recording after enough silence
             stopRecording();
             source.disconnect();
             analyser.disconnect();
@@ -154,7 +152,7 @@ const RolePlay = () => {
           }
         }
         
-        if (!isSpeaking) {
+        if (isRecording && !isSpeaking) {
           requestAnimationFrame(checkAudio);
         }
       };
@@ -162,6 +160,12 @@ const RolePlay = () => {
       checkAudio();
 
       mediaRecorder.onstop = async () => {
+        if (chunksRef.current.length === 0) {
+          console.log('No audio data recorded');
+          startRecording();
+          return;
+        }
+
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
@@ -169,6 +173,7 @@ const RolePlay = () => {
           const base64Audio = reader.result?.toString().split(',')[1];
           if (base64Audio) {
             try {
+              console.log('Sending audio to speech-to-text...');
               const { data, error } = await supabase.functions.invoke('handle-speech', {
                 body: { 
                   audio: base64Audio, 
@@ -182,11 +187,33 @@ const RolePlay = () => {
                 }
               });
 
-              if (error) throw error;
-              if (data.text && data.response) {
-                console.log('Transcribed text:', data.text);
-                console.log('AI response:', data.response);
-                await speakText(data.response);
+              if (error) {
+                console.error('Speech-to-text error:', error);
+                throw error;
+              }
+
+              if (data.text) {
+                console.log('Successfully converted speech to text:', data.text);
+                // Send the transcribed text to get AI response
+                const response = await supabase.functions.invoke('handle-speech', {
+                  body: { 
+                    text: data.text, 
+                    type: 'text-to-speech',
+                    voiceId: session?.avatar_voice_id,
+                    sessionId: session?.id,
+                    context: {
+                      avatar_id: session?.avatar_id,
+                      roleplay_type: session?.roleplay_type,
+                      scenario_description: session?.scenario_description
+                    }
+                  }
+                });
+
+                if (response.error) throw response.error;
+                if (response.data?.response) {
+                  console.log('Got AI response:', response.data.response);
+                  await speakText(response.data.response);
+                }
               }
             } catch (error) {
               console.error('Error processing speech:', error);
