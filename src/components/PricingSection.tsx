@@ -1,6 +1,8 @@
+
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
 const PricingSection = () => {
   const navigate = useNavigate();
   const plan = {
@@ -8,14 +10,25 @@ const PricingSection = () => {
     price: "$49 USD",
     period: "user/month",
     description: "Ideal for individual sales professionals",
-    features: ["Unlimited AI role-play sessions", "Advanced performance analytics", "Full scenarios library", "Priority support", "Custom scenario creation", "Personal improvement roadmap"]
+    features: [
+      "120 minutes of AI role-playing per month",
+      "Email customer support (standard response time)",
+      "Basic AI-generated feedback & scoring (e.g., tone, confidence, objection handling)"
+    ]
   };
-  return <section id="pricing" className="py-20">
+
+  return (
+    <section id="pricing" className="py-20">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-[#222222] mb-4" style={{
-          fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-        }}>Get started today. Try LevellUp free for 4 days. Cancel anytime.</h2>
+          <h2 
+            className="text-4xl font-bold text-[#222222] mb-4"
+            style={{
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+            }}
+          >
+            Get started today. Try LevellUp free for 4 days. Cancel anytime.
+          </h2>
         </div>
 
         <div className="max-w-md mx-auto">
@@ -30,18 +43,25 @@ const PricingSection = () => {
             </div>
 
             <ul className="space-y-4 mb-8">
-              {plan.features.map((feature, featureIndex) => <li key={featureIndex} className="flex items-center gap-3">
+              {plan.features.map((feature, featureIndex) => (
+                <li key={featureIndex} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-[#1E90FF]" />
                   <span className="text-gray-600">{feature}</span>
-                </li>)}
+                </li>
+              ))}
             </ul>
 
-            <Button className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white" onClick={() => navigate('/subscription')}>
+            <Button 
+              className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white" 
+              onClick={() => navigate('/subscription')}
+            >
               Try For Free
             </Button>
           </div>
         </div>
       </div>
-    </section>;
+    </section>
+  );
 };
+
 export default PricingSection;
