@@ -15,113 +15,113 @@ const avatars = [
   { 
     id: "chloe", 
     name: "Chloe", 
-    style: "SaaS Sales", 
-    personality: "Friendly and professional SaaS sales representative",
+    style: "VP of Sales", 
+    personality: "Strategic leader owning sales organization and revenue targets for enterprise SaaS companies",
     voiceId: "EXAVITQu4vr4xnSDxMaL"
   },
   { 
     id: "noah", 
     name: "Noah", 
-    style: "Enterprise", 
-    personality: "Experienced enterprise software consultant",
+    style: "Chief Revenue Officer", 
+    personality: "Experienced CRO managing integrated sales, marketing, and customer success operations",
     voiceId: "TX3LPaxmHKxFdv7VOQHJ"
   },
   { 
     id: "veronica", 
     name: "Veronica", 
-    style: "B2B Sales", 
-    personality: "Strategic B2B sales director",
+    style: "Director of Sales Development", 
+    personality: "Dynamic leader of SDR/BDR teams driving pipeline growth",
     voiceId: "pFZP5JQG7iQjIQuC4Bku"
   },
   { 
     id: "marcus", 
     name: "Marcus", 
-    style: "Technical", 
-    personality: "Technical sales engineer",
+    style: "Sales Operations Manager", 
+    personality: "Expert in optimizing sales processes, CRM systems, and analytics",
     voiceId: "CwhRBWXzGAHq8TQ4Fs17"
   },
   {
     id: "sophia",
     name: "Sophia",
-    style: "Product Demo",
-    personality: "Expert product demonstration specialist",
+    style: "VP of Marketing",
+    personality: "Strategic marketing leader focused on lead generation and revenue marketing initiatives",
     voiceId: "EXAVITQu4vr4xnSDxMaL"
   },
   {
     id: "alex",
     name: "Alex",
-    style: "Customer Success",
-    personality: "Empathetic customer success manager",
+    style: "Director of Customer Success",
+    personality: "Customer success leader specializing in renewals and expansion revenue strategies",
     voiceId: "TX3LPaxmHKxFdv7VOQHJ"
   },
   {
     id: "maya",
     name: "Maya",
-    style: "Account Management",
-    personality: "Strategic account management professional",
+    style: "VP of Business Development",
+    personality: "Strategic partnership and growth expert in financial services",
     voiceId: "pFZP5JQG7iQjIQuC4Bku"
   },
   {
     id: "james",
     name: "James",
-    style: "Solutions",
-    personality: "Solutions architect with deep technical knowledge",
+    style: "Chief Financial Officer",
+    personality: "Strategic CFO controlling budgets and financial decisions for technology investments",
     voiceId: "CwhRBWXzGAHq8TQ4Fs17"
   },
   {
     id: "emma",
     name: "Emma",
-    style: "Startup Sales",
-    personality: "Dynamic startup sales specialist",
+    style: "Risk & Compliance Manager",
+    personality: "Expert in regulatory compliance for SaaS and FinTech solutions",
     voiceId: "EXAVITQu4vr4xnSDxMaL"
   },
   {
     id: "daniel",
     name: "Daniel",
-    style: "Partner Sales",
-    personality: "Strategic partnership development manager",
+    style: "Head of Lending",
+    personality: "Banking executive overseeing commercial and retail loan products",
     voiceId: "TX3LPaxmHKxFdv7VOQHJ"
   },
   {
     id: "lisa",
     name: "Lisa",
-    style: "Healthcare Sales",
-    personality: "Healthcare industry sales expert",
+    style: "Investment Director",
+    personality: "Investment professional evaluating financial tech and SaaS tools for investment firms",
     voiceId: "pFZP5JQG7iQjIQuC4Bku"
   },
   {
     id: "michael",
     name: "Michael",
-    style: "Channel Sales",
-    personality: "Channel sales and distribution specialist",
+    style: "Procurement Manager",
+    personality: "Strategic vendor selection specialist for financial services institutions",
     voiceId: "CwhRBWXzGAHq8TQ4Fs17"
   },
   {
     id: "sarah",
     name: "Sarah",
-    style: "Financial Services",
-    personality: "Financial services sales professional",
+    style: "Chief Medical Information Officer",
+    personality: "Healthcare IT leader managing technology decisions and implementations",
     voiceId: "EXAVITQu4vr4xnSDxMaL"
   },
   {
     id: "ryan",
     name: "Ryan",
-    style: "Tech Sales",
-    personality: "Technology solutions sales expert",
+    style: "Director of Patient Experience",
+    personality: "Healthcare innovator focused on improving care through new technologies",
     voiceId: "TX3LPaxmHKxFdv7VOQHJ"
   },
   {
     id: "olivia",
     name: "Olivia",
-    style: "Education Sales",
-    personality: "Educational technology sales specialist",
+    style: "VP of Operations",
+    personality: "Healthcare system executive overseeing business processes and SaaS implementations",
     voiceId: "pFZP5JQG7iQjIQuC4Bku"
   },
   {
     id: "david",
     name: "David",
-    style: "Real Estate",
-    personality: "Real estate sales and consulting professional",
+    style: "Medical Director",
+    personality: "Clinical leader evaluating technology solutions for hospitals and clinics",
     voiceId: "CwhRBWXzGAHq8TQ4Fs17"
   }
 ];
