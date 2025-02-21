@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import Footer from "@/components/Footer";
-import Check from "@/components/icons/Check";
+import { Check } from "lucide-react";
 
 // Initialize Stripe with test publishable key
 const stripePromise = loadStripe("pk_test_51HA5oHHYcRfijJBsAxDzfvHf4LhhKoQputSDEU0rQcBTQvYWQi9ci76CAxSVIcRMjYDuzshvbK0qcxl8gSYnrXIc00axV69scf");
