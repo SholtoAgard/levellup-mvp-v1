@@ -436,8 +436,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="relative">
           {isThinking && (
-            <div className="absolute -inset-1 rounded-full">
-              <div className="w-full h-full rounded-full border-4 border-orange-500 border-t-transparent animate-spin" />
+            <div className="absolute -inset-2 rounded-full">
+              <div className="w-full h-full rounded-full border-8 border-orange-500 border-t-transparent animate-spin" />
             </div>
           )}
           <div
