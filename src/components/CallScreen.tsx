@@ -168,6 +168,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             }
           }, 3000); // Delay of 3 seconds
 
+          console.log("isListeningRef", isListeningRef.current);
+
           // Condition to cancel the timeout
           if (isListeningRef.current) {
             clearTimeout(timeoutId);
