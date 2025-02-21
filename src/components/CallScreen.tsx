@@ -394,6 +394,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         .getTracks()
         .forEach((track) => track.stop());
       mediaRecorderRef.current = null;
+    } else {
+      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
     }
     if (audioContextRef.current) {
       audioContextRef.current.close();
