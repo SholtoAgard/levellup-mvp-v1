@@ -6,7 +6,6 @@ import { Phone, Mic, MicOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
-// import "./CallScreen.css";
 
 interface CallScreenProps {
   session: RoleplaySession;
@@ -436,19 +435,13 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="relative">
+          {isThinking && (
+            <div className="absolute -inset-4 rounded-full">
+              <div className="w-full h-full rounded-full border-4 border-orange-500 border-t-transparent animate-spin" />
+            </div>
+          )}
           <div
-            className={`absolute inset-0 rounded-full ${
-              isThinking
-                ? 'before:content-[""] before:absolute before:inset-0 before:rounded-full before:border-4 before:border-green-500 before:border-t-transparent before:animate-spin'
-                : ""
-            }`}
-            style={{
-              transform: "rotate(0deg)",
-              animation: isThinking ? "spin 3s linear infinite" : "none",
-            }}
-          />
-          <div
-            className={`w-48 h-48 rounded-full p-2 relative`}
+            className="w-48 h-48 rounded-full p-2 relative"
             style={{
               background: "linear-gradient(90deg, #FF5733 0%, #FFC300 100%)",
             }}
