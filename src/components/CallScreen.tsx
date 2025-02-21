@@ -190,6 +190,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
       const db = 20 * Math.log10(average / 255);
 
+      console.log("db: " + db);
+
       // Check if audio is silent
 
       if (db > speechThreshold) {
