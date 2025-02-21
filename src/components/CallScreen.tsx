@@ -180,7 +180,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     let silenceCounter = 0;
     const minDb = -22;
-    const speechThreshold = -14;
+    const speechThreshold = -18;
     let isSilent = false;
 
     const checkVolume = () => {
@@ -436,12 +436,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="relative">
           {isThinking && (
-            <div className="absolute -inset-2 rounded-full">
+            <div className="absolute -inset-1 rounded-full">
               <div className="w-full h-full rounded-full border-4 border-orange-500 border-t-transparent animate-spin" />
             </div>
           )}
           <div
-            className="w-48 h-48 rounded-full p-2 relative"
+            className="w-48 h-48 rounded-full p-1 relative"
             style={{
               background: "linear-gradient(90deg, #FF5733 0%, #FFC300 100%)",
             }}
