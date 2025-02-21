@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
@@ -228,7 +229,18 @@ const SubscriptionPage = () => {
             <p className="mt-2 text-gray-600">
               Try it free for 4 days. Cancel anytime.
             </p>
-            <ul className="mt-6 space-y-4 text-left">
+          </div>
+
+          <div className="bg-white p-8 rounded-xl shadow-lg">
+            <div className="text-center mb-8">
+              <div className="mb-4">
+                <span className="text-4xl font-bold text-gray-900">$49</span>
+                <span className="text-gray-600 ml-2">USD/month</span>
+              </div>
+              <p className="text-gray-600">after your free trial ends</p>
+            </div>
+
+            <ul className="mt-6 space-y-4 text-left mb-8">
               {[
                 "120 minutes of AI role-playing per month",
                 "Email customer support (standard response time)",
@@ -243,16 +255,6 @@ const SubscriptionPage = () => {
                 </li>
               ))}
             </ul>
-          </div>
-
-          <div className="bg-white p-8 rounded-xl shadow-lg">
-            <div className="text-center mb-8">
-              <div className="mb-4">
-                <span className="text-4xl font-bold text-gray-900">$49</span>
-                <span className="text-gray-600 ml-2">USD/month</span>
-              </div>
-              <p className="text-gray-600">after your free trial ends</p>
-            </div>
 
             <Elements stripe={stripePromise}>
               <CheckoutForm />
