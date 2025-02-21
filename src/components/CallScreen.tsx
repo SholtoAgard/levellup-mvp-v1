@@ -139,7 +139,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       mediaRecorder.onstop = async () => {
         console.log("endVoiceCallRef", isEndCallRef);
-        mediaRecorderRef.current = null;
+        // mediaRecorderRef.current = null;
         console.log(
           "MediaRecorder stopped, isSpeaking:",
           isSpeakingRef.current,
@@ -194,7 +194,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (db > speechThreshold) {
         console.log("Speech detected");
-
+        setIsListening(true);
+        setIsThinking(false);
         speechDetected = true; // Speech detected
         silenceCounter = 0;
         isSilent = false;
