@@ -485,7 +485,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             Listening...
           </div>
         )}
-        {isThinking && (
+        {isThinkingRef.current && (
           <div className="mt-4 px-4 py-2 bg-orange-100 text-orange-600 rounded-full animate-pulse">
             Thinking...
           </div>
