@@ -436,15 +436,15 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="relative">
           {isThinking && (
-            <div className="absolute -inset-2 rounded-full">
+            <div className="absolute -inset-4 rounded-full">
               <div className="w-full h-full rounded-full border-8 border-orange-500 border-t-transparent animate-spin" />
             </div>
           )}
           <div
-            className="w-48 h-48 rounded-full p-1 relative"
-            style={{
-              background: "linear-gradient(90deg, #FF5733 0%, #FFC300 100%)",
-            }}
+            className="w-48 h-48 rounded-full relative"
+            // style={{
+            //   background: "linear-gradient(90deg, #FF5733 0%, #FFC300 100%)",
+            // }}
           >
             <Avatar className="w-full h-full">
               <AvatarImage
