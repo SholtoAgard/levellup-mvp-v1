@@ -19,6 +19,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isThinking, setIsThinking] = useState(false);
   const isSpeakingRef = useRef(isSpeaking);
   const isThinkingRef = useRef(isThinking);
+  const isListeningRef = useRef(isListening);
   const audioRef = useRef(null);
 
   const [callDuration, setCallDuration] = useState(0);
@@ -41,6 +42,10 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   useEffect(() => {
     isThinkingRef.current = isThinking;
   }, [isThinking]);
+
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
 
   useEffect(() => {
     isEndCallRef.current = endVoiceCall;
@@ -139,7 +144,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       mediaRecorder.onstop = async () => {
         console.log("endVoiceCallRef", isEndCallRef);
-        // mediaRecorderRef.current = null;
+
         console.log(
           "MediaRecorder stopped, isSpeaking:",
           isSpeakingRef.current,
@@ -149,12 +154,24 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
         if (!isEndCallRef.current) {
           console.log("Processing audio data testing...");
-          await processAudioData();
 
-          // Start a new recording only if the latest ref values indicate we should
-          if (!isSpeakingRef.current && !isThinkingRef.current) {
-            startRecording();
-            detectVolume();
+          let timeoutId = setTimeout(async () => {
+            // Ensure the conditions are still valid before running processAudioData
+            if (!isSpeakingRef.current && !isThinkingRef.current) {
+              await processAudioData();
+
+              // Start a new recording only if the latest ref values indicate we should
+              if (!isSpeakingRef.current && !isThinkingRef.current) {
+                startRecording();
+                detectVolume();
+              }
+            }
+          }, 3000); // Delay of 3 seconds
+
+          // Condition to cancel the timeout
+          if (isListeningRef.current) {
+            clearTimeout(timeoutId);
+            console.log("Timeout canceled because x is true");
           }
         }
       };
@@ -196,8 +213,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (db > speechThreshold) {
         console.log("Speech detected");
-        setIsListening(true);
-        setIsThinking(false);
+        // setIsListening(true);
+        // setIsThinking(false);
         speechDetected = true; // Speech detected
         silenceCounter = 0;
         isSilent = false;
@@ -304,6 +321,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
   const speakResponse = async (text: string) => {
     // try {
+    mediaRecorderRef.current = null;
     const { data, error } = await supabase.functions.invoke("handle-speech", {
       body: {
         text,
