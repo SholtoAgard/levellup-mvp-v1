@@ -44,8 +44,8 @@ const PricingSection = () => {
 
             <ul className="space-y-4 mb-8">
               {plan.features.map((feature, featureIndex) => (
-                <li key={featureIndex} className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-[#1E90FF]" />
+                <li key={featureIndex} className="flex items-start gap-3">
+                  <Check className="h-[20px] w-[20px] min-w-[20px] mt-1 text-[#1E90FF]" />
                   <span className="text-gray-600">{feature}</span>
                 </li>
               ))}
