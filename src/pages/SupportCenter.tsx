@@ -1,84 +1,39 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { HomeIcon, Users, HelpCircle, User, Mail, MessageSquare, Menu } from "lucide-react";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarProvider } from "@/components/ui/sidebar";
+import { Mail, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { SidebarNav } from "@/components/navigation/SidebarNav";
 import Footer from "@/components/Footer";
 
 const SupportCenter = () => {
-  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const menuContent = <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton className="w-full text-black" onClick={() => {
-        navigate('/');
-        setIsOpen(false);
-      }}>
-          <HomeIcon className="w-5 h-5" />
-          <span>Home</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton className="w-full text-black" onClick={() => {
-        navigate('/dashboard');
-        setIsOpen(false);
-      }}>
-          <Users className="w-5 h-5" />
-          <span>AI Avatars</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton className="w-full text-black" onClick={() => {
-        navigate('/support');
-        setIsOpen(false);
-      }}>
-          <HelpCircle className="w-5 h-5" />
-          <span>Support center</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton className="w-full text-black" onClick={() => {
-        navigate('/account');
-        setIsOpen(false);
-      }}>
-          <User className="w-5 h-5" />
-          <span>My Account</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton className="w-full text-black" onClick={() => {
-        navigate('/feedback');
-        setIsOpen(false);
-      }}>
-          <MessageSquare className="w-5 h-5" />
-          <span>Give me feedback</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>;
-
-  return <SidebarProvider>
+  return (
+    <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {!isMobile && <Sidebar>
+        {!isMobile && (
+          <Sidebar>
             <SidebarContent>
               <div className="p-4 mb-4">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
               </div>
               <SidebarGroup>
                 <SidebarGroupContent>
-                  {menuContent}
+                  <SidebarNav />
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
-          </Sidebar>}
+          </Sidebar>
+        )}
 
         <div className="flex-1 flex flex-col">
-          {isMobile && <div className="p-4 border-b">
+          {isMobile && (
+            <div className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
                 <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -89,12 +44,13 @@ const SupportCenter = () => {
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                     <nav className="flex flex-col gap-6 mt-6">
-                      {menuContent}
+                      <SidebarNav onNavigation={() => setIsOpen(false)} />
                     </nav>
                   </SheetContent>
                 </Sheet>
               </div>
-            </div>}
+            </div>
+          )}
 
           <div className="p-8 flex-1">
             <div className="max-w-2xl mx-auto">
@@ -104,7 +60,7 @@ const SupportCenter = () => {
                     <AvatarImage alt="Profile" src="/lovable-uploads/efa3cd88-e508-4aa3-920e-b4753e1ffdd5.jpg" />
                     <AvatarFallback>YP</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm font-medium text-gray-600">Ian Agard, founder of LevellUP</p>
+                  <p className="text-sm font-medium text-gray-600">Ian Agard, founder of LevellUp</p>
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold text-black">Need Help?</h1>
@@ -120,7 +76,8 @@ const SupportCenter = () => {
           <Footer />
         </div>
       </div>
-    </SidebarProvider>;
+    </SidebarProvider>
+  );
 };
 
 export default SupportCenter;
