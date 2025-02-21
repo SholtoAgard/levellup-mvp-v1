@@ -180,20 +180,16 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     let silenceCounter = 0;
-    const minDb = -28;
+    const minDb = -22;
     const speechThreshold = -14;
     let isSilent = false;
 
     const checkVolume = () => {
-      console.log("media Recorder Ref", mediaRecorderRef.current);
-
       if (!analyserRef.current || !mediaRecorderRef.current) return;
 
       analyserRef.current.getByteFrequencyData(dataArray);
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
       const db = 20 * Math.log10(average / 255);
-
-      console.log("db: ", db);
 
       // Check if audio is silent
 
