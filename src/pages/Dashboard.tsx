@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { HomeIcon, Users, HelpCircle, User, Send, Mic, StopCircle, Volume2, MessageSquare, Menu } from "lucide-react";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarProvider } from "@/components/ui/sidebar";
+import { Send, Mic, StopCircle, Volume2, Menu } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SidebarNav } from "@/components/navigation/SidebarNav";
 import Footer from "@/components/Footer";
 
 const avatars = [
@@ -147,71 +148,6 @@ const Dashboard = () => {
   const descriptionChunksRef = useRef<Blob[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
-
-  const menuContent = (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/');
-            setIsOpen(false);
-          }}
-        >
-          <HomeIcon className="w-5 h-5" />
-          <span>Home</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/dashboard');
-            setIsOpen(false);
-          }}
-        >
-          <Users className="w-5 h-5" />
-          <span>AI Avatars</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/support');
-            setIsOpen(false);
-          }}
-        >
-          <HelpCircle className="w-5 h-5" />
-          <span>Support center</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/account');
-            setIsOpen(false);
-          }}
-        >
-          <User className="w-5 h-5" />
-          <span>My Account</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/feedback');
-            setIsOpen(false);
-          }}
-        >
-          <MessageSquare className="w-5 h-5" />
-          <span>Give us feedback</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
 
   useEffect(() => {
     if (currentSession) {
@@ -591,7 +527,7 @@ const Dashboard = () => {
               </div>
               <SidebarGroup>
                 <SidebarGroupContent>
-                  {menuContent}
+                  <SidebarNav />
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
@@ -611,7 +547,7 @@ const Dashboard = () => {
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                     <nav className="flex flex-col gap-6 mt-6">
-                      {menuContent}
+                      <SidebarNav onNavigation={() => setIsOpen(false)} />
                     </nav>
                   </SheetContent>
                 </Sheet>
