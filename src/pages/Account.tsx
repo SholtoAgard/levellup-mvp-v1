@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -50,18 +51,42 @@ const Account = () => {
         throw new Error('You must be logged in to cancel your subscription');
       }
 
-      const { error } = await supabase.functions.invoke('cancel-subscription', {
+      // First, cancel the subscription in Stripe
+      const { error: cancelError } = await supabase.functions.invoke('cancel-subscription', {
         body: { user_id: user.id }
       });
 
-      if (error) throw error;
+      if (cancelError) throw cancelError;
+
+      // Delete roleplay sessions
+      const { error: sessionsError } = await supabase
+        .from('roleplay_sessions')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (sessionsError) throw sessionsError;
+
+      // Delete profile data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      // Sign out the user
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) throw signOutError;
 
       toast({
-        title: "Subscription cancelled",
-        description: "Your subscription has been successfully cancelled.",
+        title: "Account cancelled",
+        description: "Your account has been successfully cancelled. You'll be redirected to the homepage.",
       });
 
-      navigate('/');
+      // Redirect to home page after a short delay
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
       
     } catch (error: any) {
       console.error('Cancellation error:', error);

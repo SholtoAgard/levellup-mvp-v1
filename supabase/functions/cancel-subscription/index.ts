@@ -4,6 +4,7 @@ import { stripe } from '../_shared/stripe.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -24,7 +25,7 @@ Deno.serve(async (req) => {
     // Get the user's profile to find their Stripe subscription
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('stripe_subscription_id')
+      .select('stripe_subscription_id, stripe_customer_id')
       .eq('id', user_id)
       .single()
 
@@ -33,28 +34,20 @@ Deno.serve(async (req) => {
     }
 
     // Cancel the subscription in Stripe
-    const subscription = await stripe.subscriptions.cancel(profile.stripe_subscription_id)
+    await stripe.subscriptions.cancel(profile.stripe_subscription_id)
 
-    // Update the profile to reflect cancellation
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        trial_ends_at: null,
-        is_trial_used: true,
-        stripe_subscription_id: null
-      })
-      .eq('id', user_id)
-
-    if (updateError) {
-      throw new Error('Failed to update profile')
+    // Also delete the customer in Stripe if it exists
+    if (profile.stripe_customer_id) {
+      await stripe.customers.del(profile.stripe_customer_id)
     }
 
     return new Response(
-      JSON.stringify({ success: true, subscription }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
+    console.error('Error cancelling subscription:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
