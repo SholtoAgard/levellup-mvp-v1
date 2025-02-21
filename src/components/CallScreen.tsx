@@ -213,8 +213,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (db > speechThreshold) {
         console.log("Speech detected");
-        // setIsListening(true);
-        // setIsThinking(false);
+        setIsListening(true);
+        setIsThinking(false);
         speechDetected = true; // Speech detected
         silenceCounter = 0;
         isSilent = false;
@@ -228,6 +228,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         ) {
           if (!isThinkingRef.current && !isSpeakingRef.current) {
             console.log("Silence detected, stopping recording");
+            setIsListening(false);
             setIsThinking(true);
             isSilent = true;
             mediaRecorderRef.current.stop();
