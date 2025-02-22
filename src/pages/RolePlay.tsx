@@ -307,40 +307,34 @@ const RolePlay = () => {
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-            <div className="w-full lg:w-1/3">
-              {session?.avatar_id && (
-                <div className="text-center bg-gray-50 p-4 rounded-lg">
-                  <Avatar className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4">
-                    <AvatarImage
-                      src={
-                        supabase.storage
-                          .from("avatars")
-                          .getPublicUrl(`${session.avatar_id}.jpg`).data
-                          .publicUrl
-                      }
-                    />
-                  </Avatar>
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2">
-                    {session.avatar_id}
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    {session.roleplay_type}
-                  </p>
-                  <Button
-                    onClick={() => setShowCallScreen(true)}
-                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
-                  >
-                    <Phone className="w-4 h-4 mr-2" />
-                    Start Voice Call
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            <div className="w-full lg:w-2/3 flex flex-col">
-              
-            </div>
+          <div className="flex flex-col items-center justify-center">
+            {session?.avatar_id && (
+              <div className="max-w-sm text-center bg-gray-50 p-4 rounded-lg">
+                <Avatar className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4">
+                  <AvatarImage
+                    src={
+                      supabase.storage
+                        .from("avatars")
+                        .getPublicUrl(`${session.avatar_id}.jpg`).data
+                        .publicUrl
+                    }
+                  />
+                </Avatar>
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  {session.avatar_id}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {session.roleplay_type}
+                </p>
+                <Button
+                  onClick={() => setShowCallScreen(true)}
+                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  Start Voice Call
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
