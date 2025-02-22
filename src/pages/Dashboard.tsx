@@ -87,43 +87,45 @@ const Dashboard = () => {
       return;
     }
 
-    const { data: userSession } = await supabase.auth.getSession();
-    const userId = userSession.session?.user.id;
+    setIsLoading(true);
 
-    if (!userId) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to start a roleplay session",
-        variant: "destructive",
-      });
-      return;
-    }
+    try {
+      const { data: userSession } = await supabase.auth.getSession();
+      const userId = userSession.session?.user.id;
 
-    const selectedAvatarData = avatars.find(avatar => avatar.id === selectedAvatar);
-    
-    const { data: session, error } = await supabase
-      .from('roleplay_sessions')
-      .insert({
-        user_id: userId,
-        avatar_id: selectedAvatar,
-        avatar_voice_id: selectedAvatarData?.voiceId,
-        roleplay_type: selectedRolePlay,
-        scenario_description: rolePlayDescription,
-        status: 'in_progress' as const
-      })
-      .select()
-      .single();
+      if (!userId) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to start a roleplay session",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to start roleplay session",
-        variant: "destructive",
-      });
-      return;
-    }
+      const selectedAvatarData = avatars.find(avatar => avatar.id === selectedAvatar);
+      
+      const { data: session, error } = await supabase
+        .from('roleplay_sessions')
+        .insert({
+          user_id: userId,
+          avatar_id: selectedAvatar,
+          avatar_voice_id: selectedAvatarData?.voiceId,
+          roleplay_type: selectedRolePlay,
+          scenario_description: rolePlayDescription,
+          status: 'in_progress' as const
+        })
+        .select()
+        .single();
 
-    if (session) {
+      if (error) {
+        throw error;
+      }
+
+      if (!session) {
+        throw new Error('Failed to create session');
+      }
+
       const typedSession: RoleplaySession = {
         id: session.id,
         avatar_id: session.avatar_id,
@@ -137,11 +139,28 @@ const Dashboard = () => {
         feedback: session.feedback || undefined
       };
       
-      navigate('/roleplay', { state: { session: typedSession } });
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      navigate('/roleplay', { 
+        state: { 
+          session: typedSession 
+        },
+        replace: true
+      });
+
       toast({
         title: "Roleplay Started",
         description: "You can now begin your conversation with the AI.",
       });
+    } catch (error) {
+      console.error('Error starting roleplay:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start roleplay session. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 

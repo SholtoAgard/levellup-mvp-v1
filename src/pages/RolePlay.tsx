@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from "react";
+
+import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +33,8 @@ const RolePlay = () => {
       return;
     }
     loadMessages();
+    // Update the document title when the component mounts
+    document.title = "Role Play Session";
   }, [session]);
 
   const loadMessages = async () => {
@@ -291,7 +294,7 @@ const RolePlay = () => {
     <div className="min-h-screen flex flex-col">
       <div className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-4 sm:mb-8 flex-wrap gap-4">
+          <div className="flex items-center mb-4 sm:mb-8 flex-wrap gap-4">
             <div className="flex items-center">
               <Button
                 variant="ghost"
@@ -305,124 +308,36 @@ const RolePlay = () => {
                 Role Play Session
               </h1>
             </div>
-            <Button
-              onClick={handleGetScore}
-              disabled={isLoading || messages.length < 4}
-              className="bg-amber-500 hover:bg-amber-600"
-              size={isMobile ? "sm" : "default"}
-            >
-              <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Get Your Score
-            </Button>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-            <div className="w-full lg:w-1/3">
-              {session?.avatar_id && (
-                <div className="text-center bg-gray-50 p-4 rounded-lg">
-                  <Avatar className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4">
-                    <AvatarImage
-                      src={
-                        supabase.storage
-                          .from("avatars")
-                          .getPublicUrl(`${session.avatar_id}.jpg`).data
-                          .publicUrl
-                      }
-                    />
-                  </Avatar>
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2">
-                    {session.avatar_id}
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    {session.roleplay_type}
-                  </p>
-                  <Button
-                    onClick={() => setShowCallScreen(true)}
-                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
-                  >
-                    <Phone className="w-4 h-4 mr-2" />
-                    Start Voice Call
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            <div className="w-full lg:w-2/3 flex flex-col">
-              <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg min-h-[300px] sm:min-h-[400px] bg-white">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[85%] sm:max-w-[80%] p-3 sm:p-4 rounded-lg ${
-                        message.role === "user"
-                          ? "bg-[#1E90FF] text-white"
-                          : "bg-gray-100 text-gray-900"
-                      } relative group`}
-                    >
-                      {message.content}
-                      {message.role === "ai" && (
-                        <Button
-                          className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                          variant="secondary"
-                          size="icon"
-                          onClick={() => speakText(message.content)}
-                        >
-                          <Volume2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2 sm:gap-4">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 p-2 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
+          <div className="flex flex-col items-center justify-center">
+            {session?.avatar_id && (
+              <div className="max-w-sm text-center bg-gray-50 p-4 rounded-lg">
+                <Avatar className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-4">
+                  <AvatarImage
+                    src={
+                      supabase.storage
+                        .from("avatars")
+                        .getPublicUrl(`${session.avatar_id}.jpg`).data
+                        .publicUrl
                     }
-                  }}
-                />
+                  />
+                </Avatar>
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  {session.avatar_id}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {session.roleplay_type}
+                </p>
                 <Button
-                  className={`${
-                    isRecording ? "bg-red-500" : "bg-blue-500"
-                  } hover:bg-opacity-90 text-white`}
-                  size={isMobile ? "icon" : "default"}
-                  onClick={isRecording ? stopRecording : startRecording}
+                  onClick={() => setShowCallScreen(true)}
+                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
                 >
-                  {isRecording ? (
-                    <StopCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                  ) : (
-                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
-                  )}
-                </Button>
-                <Button
-                  className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
-                  onClick={() => sendMessage()}
-                  disabled={isLoading}
-                  size={isMobile ? "icon" : "default"}
-                >
-                  {isLoading ? (
-                    "..."
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                      {!isMobile && <span className="ml-2">Send</span>}
-                    </>
-                  )}
+                  <Phone className="w-4 h-4 mr-2" />
+                  Start Voice Call
                 </Button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
