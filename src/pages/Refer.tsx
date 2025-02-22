@@ -7,7 +7,7 @@ import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarProvider } from "@/components/ui/sidebar";
 
 const Refer = () => {
   const [emails, setEmails] = useState("");
@@ -22,6 +22,21 @@ const Refer = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
+        {!isMobile && (
+          <Sidebar>
+            <SidebarContent>
+              <div className="p-4 mb-4">
+                <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
+              </div>
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarNav />
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+        )}
+
         <div className="flex-1 flex flex-col">
           {isMobile && (
             <div className="p-4 border-b">
