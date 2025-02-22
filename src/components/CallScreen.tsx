@@ -388,19 +388,15 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     // }
   };
 
-  const endCall = () => {
+  const endCall = async () => {
     setEndVoiceCall(true);
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0; // Reset audio position
+      audioRef.current.currentTime = 0;
     }
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stream
-        .getTracks()
-        .forEach((track) => track.stop());
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
       mediaRecorderRef.current = null;
-    } else {
-      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
     }
     if (audioContextRef.current) {
       audioContextRef.current.close();
@@ -409,7 +405,35 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       analyserRef.current = null;
     }
     window.speechSynthesis.cancel();
-    navigate(-1);
+
+    try {
+      // Get call score and feedback
+      const { data: scoreData, error: scoreError } = await supabase.functions.invoke(
+        "handle-roleplay",
+        {
+          body: {
+            sessionId: session.id,
+            requestScoring: true,
+          },
+        }
+      );
+
+      if (scoreError) throw scoreError;
+
+      // Navigate to the call score page
+      navigate("/call-score", {
+        state: { session },
+        replace: true,
+      });
+    } catch (error) {
+      console.error("Error getting score:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate call score",
+        variant: "destructive",
+      });
+      navigate(-1);
+    }
   };
 
   const formatTime = (seconds: number) => {

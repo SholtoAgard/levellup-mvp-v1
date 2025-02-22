@@ -9,6 +9,7 @@ import Index from './pages/Index.tsx';
 import NotFound from './pages/NotFound.tsx';
 import RolePlay from './pages/RolePlay.tsx';
 import CallSession from './pages/CallSession.tsx';
+import CallScore from './pages/CallScore.tsx';
 import Subscription from './pages/Subscription.tsx';
 import SupportCenter from './pages/SupportCenter.tsx';
 import TermsOfService from './pages/TermsOfService.tsx';
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
       {
         path: "call-session",
         element: <CallSession />,
+      },
+      {
+        path: "call-score",
+        element: <CallScore />,
       },
       {
         path: "subscription",
