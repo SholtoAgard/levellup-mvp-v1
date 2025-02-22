@@ -229,7 +229,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         ) {
           if (!isThinkingRef.current && !isSpeakingRef.current) {
             console.log("Silence detected, stopping recording");
-            // setIsListening(false);
+            setIsListening(false);
             setIsThinking(true);
             isSilent = true;
             mediaRecorderRef.current.stop();
@@ -276,8 +276,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     console.log("handle speech function called");
 
     try {
-      setIsListening(false);
-
       const { data: speechData, error: speechError } =
         await supabase.functions.invoke("handle-speech", {
           body: { audio: base64Audio, type: "speech-to-text" },
