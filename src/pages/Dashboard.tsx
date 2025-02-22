@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -168,11 +167,6 @@ const Dashboard = () => {
 
       setNewMessage("");
       await loadMessages();
-      
-      if (data.response) {
-        // This will be handled by the ChatInterface component
-        await speakText(data.response);
-      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
