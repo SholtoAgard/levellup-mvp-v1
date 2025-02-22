@@ -184,7 +184,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     let silenceCounter = 0;
     const minDb = -22;
-    const speechThreshold = -15;
+    const speechThreshold = -13;
     let isSilent = false;
 
     const checkVolume = () => {
