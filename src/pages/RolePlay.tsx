@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ const RolePlay = () => {
       return;
     }
     loadMessages();
+    // Update the document title when the component mounts
+    document.title = "Role Play Session";
   }, [session]);
 
   const loadMessages = async () => {
