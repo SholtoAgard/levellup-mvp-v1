@@ -149,7 +149,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           "MediaRecorder stopped, isSpeaking:",
           isSpeakingRef.current,
           "isThinking:",
-          isThinkingRef.current
+          isThinkingRef.current,
+          "isListeningRef",
+          isListeningRef.current
         );
 
         if (!isEndCallRef.current) {
