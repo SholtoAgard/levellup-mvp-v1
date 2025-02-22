@@ -157,7 +157,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
           // let timeoutId = setTimeout(async () => {
           //   // Ensure the conditions are still valid before running processAudioData
-          if (!isSpeakingRef.current && !isThinkingRef.current) {
+          if (!isSpeakingRef.current && !isListeningRef.current) {
             await processAudioData();
 
             // Start a new recording only if the latest ref values indicate we should
