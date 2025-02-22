@@ -442,7 +442,16 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         <div className="relative">
           {isThinking && (
             <div className="absolute -inset-3 rounded-full">
-              <div className="w-full h-full rounded-full border-8 border-orange-500 border-t-transparent animate-spin" />
+              <div
+                className={`
+    w-full h-full 
+    rounded-full 
+    border-8 border-${isSpeaking ? "green" : "purple"}-500 ${
+                  (isSpeaking || isListening) && "p2  "
+                } border-t-transparent 
+    animate-spin
+  `}
+              />
             </div>
           )}
           <div
