@@ -285,7 +285,7 @@ const RolePlay = () => {
             <div className="flex items-center">
               <Button
                 variant="ghost"
-                onClick={() => handleBackClick}
+                onClick={handleBackClick}
                 className="mr-2 sm:mr-4"
                 size={isMobile ? "sm" : "default"}
               >
