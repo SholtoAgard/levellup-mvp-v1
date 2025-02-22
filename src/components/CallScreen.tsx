@@ -42,9 +42,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     isThinkingRef.current = isThinking;
   }, [isThinking]);
 
-  // useEffect(() => {
-  //   isListeningRef.current = isListening;
-  // }, [isListening]);
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
 
   useEffect(() => {
     isEndCallRef.current = endVoiceCall;
