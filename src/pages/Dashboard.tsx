@@ -139,9 +139,7 @@ const Dashboard = () => {
         feedback: session.feedback || undefined
       };
       
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      navigate('/roleplay', { 
+      navigate('/call-session', { 
         state: { 
           session: typedSession 
         },
@@ -149,7 +147,7 @@ const Dashboard = () => {
       });
 
       toast({
-        title: "Roleplay Started",
+        title: "Call Session Started",
         description: "You can now begin your conversation with the AI.",
       });
     } catch (error) {

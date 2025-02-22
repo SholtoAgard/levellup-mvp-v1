@@ -8,6 +8,7 @@ import Auth from './pages/Auth.tsx';
 import Index from './pages/Index.tsx';
 import NotFound from './pages/NotFound.tsx';
 import RolePlay from './pages/RolePlay.tsx';
+import CallSession from './pages/CallSession.tsx';
 import Subscription from './pages/Subscription.tsx';
 import SupportCenter from './pages/SupportCenter.tsx';
 import TermsOfService from './pages/TermsOfService.tsx';
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
       {
         path: "roleplay",
         element: <RolePlay />,
+      },
+      {
+        path: "call-session",
+        element: <CallSession />,
       },
       {
         path: "subscription",
