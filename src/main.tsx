@@ -63,6 +63,10 @@ const router = createBrowserRouter([
         element: <Feedback />,
       },
       {
+        path: "feedback/:sessionId",
+        element: <Feedback />,
+      },
+      {
         path: "refer",
         element: <Refer />,
       }
