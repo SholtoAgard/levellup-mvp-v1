@@ -274,6 +274,16 @@ const RolePlay = () => {
   };
 
   if (showCallScreen && session) {
+    if (audioRef?.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0; // Reset audio position
+    }
+    if (mediaRecorderRef?.current) {
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
+      mediaRecorderRef.current = null;
+    }
     return <CallScreen session={session} />;
   }
 
