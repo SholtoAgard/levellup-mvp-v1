@@ -7,39 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Process base64 in chunks to prevent memory issues
-function processBase64Chunks(base64String: string, chunkSize = 32768) {
-  const chunks: Uint8Array[] = [];
-  let position = 0;
-
-  while (position < base64String.length) {
-    const chunk = base64String.slice(position, position + chunkSize);
-    const binaryChunk = atob(chunk);
-    const bytes = new Uint8Array(binaryChunk.length);
-
-    for (let i = 0; i < binaryChunk.length; i++) {
-      bytes[i] = binaryChunk.charCodeAt(i);
-    }
-
-    chunks.push(bytes);
-    position += chunkSize;
-  }
-
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return result;
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -50,16 +20,21 @@ serve(async (req) => {
         throw new Error("No audio data provided");
       }
 
-      // Process audio in chunks
-      const binaryAudio = processBase64Chunks(audio);
+      // Process audio data
+      const audioData = new Uint8Array(
+        atob(audio)
+          .split("")
+          .map((char) => char.charCodeAt(0))
+      );
+      const blob = new Blob([audioData], { type: "audio/webm" });
 
-      // Prepare form data
+      // Create form data for Whisper API
       const formData = new FormData();
-      const blob = new Blob([binaryAudio], { type: "audio/webm" });
       formData.append("file", blob, "audio.webm");
       formData.append("model", "whisper-1");
+      formData.append("language", "en"); // Force English language
+      formData.append("response_format", "json");
 
-      // Send to OpenAI
       const response = await fetch(
         "https://api.openai.com/v1/audio/transcriptions",
         {
@@ -72,21 +47,22 @@ serve(async (req) => {
       );
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${await response.text()}`);
+        throw new Error(`Whisper API error: ${await response.text()}`);
       }
 
-      const result = await response.json();
-      return new Response(JSON.stringify({ text: result.text }), {
+      const data = await response.json();
+      return new Response(JSON.stringify({ text: data.text }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } else if (type === "text-to-speech") {
-      if (!text) {
-        throw new Error("No text provided");
+      if (!text || !voiceId) {
+        throw new Error("Text and voiceId are required for text-to-speech");
       }
 
+      console.log("Making text-to-speech request with:", { text, voiceId });
+
       const response = await fetch(
-        "https://api.elevenlabs.io/v1/text-to-speech/" +
-          (voiceId || "EXAVITQu4vr4xnSDxMaL"),
+        "https://api.elevenlabs.io/v1/text-to-speech/" + voiceId,
         {
           method: "POST",
           headers: {
@@ -95,7 +71,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            text: text,
+            text,
             model_id: "eleven_monolingual_v1",
             voice_settings: {
               stability: 0.5,
@@ -106,14 +82,24 @@ serve(async (req) => {
       );
 
       if (!response.ok) {
-        console.error("ElevenLabs API error:", response.text());
-        throw new Error("Failed to generate speech from ElevenLabs");
+        const errorText = await response.text();
+        console.error("ElevenLabs API error:", errorText);
+        throw new Error("Failed to generate speech: " + errorText);
       }
 
+      // Use chunks to handle large audio files
       const arrayBuffer = await response.arrayBuffer();
-      const base64Audio = btoa(
-        String.fromCharCode(...new Uint8Array(arrayBuffer))
-      );
+      const bytes = new Uint8Array(arrayBuffer);
+      const chunks = [];
+      const chunkSize = 8192; // Process data in smaller chunks
+
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        chunks.push(
+          String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize))
+        );
+      }
+
+      const base64Audio = btoa(chunks.join(""));
 
       return new Response(JSON.stringify({ audioContent: base64Audio }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
