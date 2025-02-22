@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ interface CallScreenProps {
   session: RoleplaySession;
 }
 
-let mediaRecorder: MediaRecorder;
+let mediaRecorder;
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
@@ -21,7 +20,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const isSpeakingRef = useRef(isSpeaking);
   const isThinkingRef = useRef(isThinking);
   const isListeningRef = useRef(isListening);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef(null);
 
   const [callDuration, setCallDuration] = useState(0);
   const [endVoiceCall, setEndVoiceCall] = useState(false);
@@ -68,6 +67,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   }, []);
 
   const processAudioData = async () => {
+    console.log("inside processAudioData function");
+
     if (chunksRef.current.length === 0 || processingAudioRef.current) return;
 
     processingAudioRef.current = true;
@@ -108,14 +109,20 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       analyserRef.current.fftSize = 256;
 
       let mimeType = "audio/webm";
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
+      let isSupported = MediaRecorder.isTypeSupported(mimeType);
+
+      if (!isSupported) {
         mimeType = "audio/mp4";
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = "audio/wav";
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            throw new Error("No supported audio MIME type found");
-          }
-        }
+        isSupported = MediaRecorder.isTypeSupported(mimeType);
+      }
+
+      if (!isSupported) {
+        mimeType = "audio/wav";
+        isSupported = MediaRecorder.isTypeSupported(mimeType);
+      }
+
+      if (!isSupported) {
+        throw new Error("No supported audio MIME type found");
       }
 
       console.log("Using MIME type:", mimeType);
@@ -128,15 +135,27 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (e) => {
+        console.log("Data available:", e.data.size);
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
+        console.log("endVoiceCallRef", isEndCallRef);
         mediaRecorderRef.current = null;
+        console.log(
+          "MediaRecorder stopped, isSpeaking:",
+          isSpeakingRef.current,
+          "isThinking:",
+          isThinkingRef.current
+        );
+
         if (!isEndCallRef.current) {
+          console.log("Processing audio data testing...");
           await processAudioData();
+
+          // Start a new recording only if the latest ref values indicate we should
           if (!isSpeakingRef.current && !isThinkingRef.current) {
             startRecording();
             detectVolume();
@@ -150,11 +169,14 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       console.error("Error accessing microphone:", error);
       toast({
         title: "Error",
-        description: "Failed to access microphone. Please check permissions.",
+        description:
+          "Failed to access microphone. Please make sure you have granted microphone permissions.",
         variant: "destructive",
       });
     }
   };
+
+  let speechDetected = false;
 
   const detectVolume = () => {
     if (!analyserRef.current) return;
@@ -164,7 +186,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     const minDb = -22;
     const speechThreshold = -13;
     let isSilent = false;
-    let speechDetected = false;
 
     const checkVolume = () => {
       if (!analyserRef.current || !mediaRecorderRef.current) return;
@@ -173,13 +194,25 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
       const db = 20 * Math.log10(average / 255);
 
+      //   console.log("db: " + db);
+
+      // Check if audio is silent
+
       if (db > speechThreshold) {
-        speechDetected = true;
+        console.log("Speech detected");
+        // setIsListening(true);
+        // setIsThinking(false);
+        speechDetected = true; // Speech detected
         silenceCounter = 0;
         isSilent = false;
       } else if (db < minDb) {
         silenceCounter++;
-        if (silenceCounter > 300 && !isSilent && speechDetected && mediaRecorderRef.current.state === "recording") {
+        if (
+          silenceCounter > 300 &&
+          !isSilent &&
+          speechDetected &&
+          mediaRecorderRef.current.state === "recording"
+        ) {
           if (!isThinkingRef.current && !isSpeakingRef.current) {
             console.log("Silence detected, stopping recording");
             setIsListening(false);
@@ -192,157 +225,181 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         }
       }
 
-      if (!isEndCallRef.current) {
-        requestAnimationFrame(checkVolume);
-      }
+      requestAnimationFrame(checkVolume);
     };
 
     checkVolume();
   };
 
   const startRecording = () => {
-    if (!mediaRecorderRef.current || isSpeakingRef.current || isThinkingRef.current) return;
+    console.log("in the start recording function");
+    mediaRecorderRef.current = mediaRecorder;
+
+    console.log("MediaRecorder state:", mediaRecorderRef.current?.state);
+    console.log("Is speaking:", isSpeaking);
+    console.log("Is thinking:", isThinking);
+
+    if (!mediaRecorderRef.current || isSpeaking || isThinking) return;
 
     try {
+      console.log("Starting new recording");
       chunksRef.current = [];
       mediaRecorderRef.current.start();
-      setIsListening(true);
       console.log("Recording started");
+      setIsListening(true);
     } catch (error) {
       console.error("Error starting recording:", error);
       toast({
         title: "Error",
-        description: "Failed to start recording. Please refresh the page.",
+        description:
+          "Failed to start recording. Please try refreshing the page.",
         variant: "destructive",
       });
     }
   };
 
   const handleSpeech = async (base64Audio: string) => {
+    console.log("handle speech function called");
+
     try {
-      const { data: speechData, error: speechError } = await supabase.functions.invoke("handle-speech", {
-        body: { audio: base64Audio, type: "speech-to-text" },
-      });
+      const { data: speechData, error: speechError } =
+        await supabase.functions.invoke("handle-speech", {
+          body: { audio: base64Audio, type: "speech-to-text" },
+        });
 
       if (speechError) throw speechError;
-      
-      if (speechData?.text) {
-        console.log("Speech to text result:", speechData.text);
-        
-        const { data: roleplayData, error: roleplayError } = await supabase.functions.invoke("handle-roleplay", {
-          body: {
-            sessionId: session.id,
-            message: speechData.text,
-            context: session.status === "in_progress"
-              ? {
-                  avatar_id: session.avatar_id,
-                  roleplay_type: session.roleplay_type,
-                  scenario_description: session.scenario_description,
-                }
-              : undefined,
-          },
-        });
+      if (speechData.text) {
+        const { data: roleplayData, error: roleplayError } =
+          await supabase.functions.invoke("handle-roleplay", {
+            body: {
+              sessionId: session.id,
+              message: speechData.text,
+              context:
+                session.status === "in_progress"
+                  ? {
+                      avatar_id: session.avatar_id,
+                      roleplay_type: session.roleplay_type,
+                      scenario_description: session.scenario_description,
+                    }
+                  : undefined,
+            },
+          });
 
         if (roleplayError) throw roleplayError;
 
-        if (roleplayData?.response) {
+        if (roleplayData.response) {
           await speakResponse(roleplayData.response);
-        } else {
-          // If no response, start listening again
-          setIsThinking(false);
-          startRecording();
-          detectVolume();
+
+          console.log("No error in speak response");
         }
       }
     } catch (error) {
       console.error("Error in speech handling:", error);
+
       toast({
         title: "Error",
         description: "Failed to process speech. Please try again.",
         variant: "destructive",
       });
-      setIsThinking(false);
-      startRecording();
-      detectVolume();
+      // startRecording(); // Restart recording even if there was an error
     }
   };
 
   const speakResponse = async (text: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("handle-speech", {
-        body: {
-          text,
-          type: "text-to-speech",
-          voiceId: session.avatar_voice_id,
-        },
+    // try {
+    const { data, error } = await supabase.functions.invoke("handle-speech", {
+      body: {
+        text,
+        type: "text-to-speech",
+        voiceId: session.avatar_voice_id,
+      },
+    });
+
+    if (error) {
+      console.log("Error in text to speech:", error);
+
+      // if (error.message?.includes("exceeds")) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      setIsThinking(false);
+      setIsSpeaking(true);
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+
+      toast({
+        title: "Notice",
+        description: "Using browser's text-to-speech as a fallback.",
+        duration: 3000,
       });
 
-      if (error) {
-        console.log("Error in text to speech:", error);
-        // Fallback to browser's text-to-speech
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        setIsThinking(false);
-        setIsSpeaking(true);
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
+      return new Promise((resolve) => {
+        utterance.onend = () => {
+          console.log("utterance ended");
+          startRecording();
+          detectVolume();
 
-        return new Promise((resolve) => {
-          utterance.onend = () => {
-            startRecording();
-            detectVolume();
-            setIsSpeaking(false);
-            resolve(null);
-          };
-        });
-      }
+          setIsSpeaking(false);
 
-      if (data.audioContent) {
-        const binaryString = atob(data.audioContent);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < bytes.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const audioBlob = new Blob([bytes], { type: "audio/mp3" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
-
-        setIsThinking(false);
-        setIsSpeaking(true);
-        
-        return new Promise((resolve) => {
-          audio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            startRecording();
-            detectVolume();
-            setIsSpeaking(false);
-            resolve(null);
-          };
-          audio.play();
-        });
-      }
-    } catch (error) {
-      console.error("Error in text to speech:", error);
-      setIsThinking(false);
-      startRecording();
-      detectVolume();
+          resolve(null);
+        };
+      });
+      // }
+      // throw error;
     }
+
+    if (data.audioContent) {
+      const binaryString = atob(data.audioContent);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const audioBlob = new Blob([bytes], { type: "audio/mp3" });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      setIsThinking(false);
+      setIsSpeaking(true);
+      audio.play();
+
+      return new Promise((resolve) => {
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          console.log("eleven lab audio ended");
+
+          startRecording();
+          detectVolume();
+
+          setIsSpeaking(false);
+          resolve(null);
+        };
+      });
+    }
+    // } catch (error) {
+    //   console.error("Error in text to speech:", error);
+    //   toast({
+    //     title: "Error",
+    //     description: "Failed to generate speech. Please try again.",
+    //     variant: "destructive",
+    //   });
+    // }
   };
 
   const endCall = () => {
     setEndVoiceCall(true);
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.currentTime = 0; // Reset audio position
     }
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
       mediaRecorderRef.current = null;
-    } else if (mediaRecorder) {
+    } else {
       mediaRecorder.stream.getTracks().forEach((track) => track.stop());
     }
     if (audioContextRef.current) {
@@ -388,7 +445,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
               <div className="w-full h-full rounded-full border-8 border-orange-500 border-t-transparent animate-spin" />
             </div>
           )}
-          <div className="w-48 h-48 rounded-full relative">
+          <div
+            className="w-48 h-48 rounded-full relative"
+            // style={{
+            //   background: "linear-gradient(90deg, #FF5733 0%, #FFC300 100%)",
+            // }}
+          >
             <Avatar className="w-full h-full">
               <AvatarImage
                 src={
