@@ -143,6 +143,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       mediaRecorder.onstop = async () => {
         console.log("endVoiceCallRef", isEndCallRef);
+        mediaRecorderRef.current = null;
 
         console.log(
           "MediaRecorder stopped, isSpeaking:",
@@ -322,7 +323,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
   const speakResponse = async (text: string) => {
     // try {
-    mediaRecorderRef.current = null;
     const { data, error } = await supabase.functions.invoke("handle-speech", {
       body: {
         text,
