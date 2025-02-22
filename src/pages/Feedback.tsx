@@ -55,13 +55,7 @@ const Feedback = () => {
             <div className="max-w-3xl mx-auto">
               <h1 className="text-3xl font-bold text-gray-900 mb-8">Help Me Build the #1 Sales Training Platform</h1>
               <div className="prose prose-lg">
-                <p className="text-gray-600 mb-6">At LevellUp, my mission is to create the most effective and widely used sales training platform in the world. To achieve that, I need your help!</p>
-                <p className="text-gray-600 mb-6">
-                  Your feedback is invaluable in shaping LevellUp into the ultimate tool for sales reps like you. By sharing your thoughts, you'll play a key role in improving the platform and making it even better.
-                </p>
-                <p className="text-gray-600 mb-8">
-                  Please click the "Give Your Feedback" button to take a short survey—it'll only take 3-5 minutes to complete. Thank you for helping me level up!
-                </p>
+                <p className="text-gray-600">At LevellUp, my mission is to build the most effective sales training platform. I need your help! Your feedback is crucial in shaping LevellUp into the ultimate tool for sales reps. By sharing your thoughts, you'll directly improve the platform. Click the "Give Your Feedback" button to take a quick 3-5 minute survey. Thank you for helping me level up!</p>
                 <Button size="lg" className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white" onClick={() => window.open('https://forms.gle/nWB65dFyuc8ctN5v6', '_blank')}>
                   Give Your Feedback
                 </Button>
