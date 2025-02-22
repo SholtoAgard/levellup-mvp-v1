@@ -29,7 +29,7 @@ export const SidebarNav = ({ onNavigation }: { onNavigation?: () => void }) => {
           }}
         >
           <Users className="w-5 h-5" />
-          <span>AI Avatars</span>
+          <span>Dashboard</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem>

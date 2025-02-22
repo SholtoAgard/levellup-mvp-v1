@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarProvider } from "@/components/ui/sidebar";
-import { Send, Mic, StopCircle, Volume2, Menu } from "lucide-react";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Menu } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
@@ -11,123 +10,11 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
 import Footer from "@/components/Footer";
-
-const avatars = [
-  { 
-    id: "chloe", 
-    name: "Chloe", 
-    style: "VP of Sales", 
-    personality: "Strategic leader owning sales organization and revenue targets for enterprise SaaS companies",
-    voiceId: "EXAVITQu4vr4xnSDxMaL"
-  },
-  { 
-    id: "noah", 
-    name: "Noah", 
-    style: "Chief Revenue Officer", 
-    personality: "Experienced CRO managing integrated sales, marketing, and customer success operations",
-    voiceId: "TX3LPaxmHKxFdv7VOQHJ"
-  },
-  { 
-    id: "veronica", 
-    name: "Veronica", 
-    style: "Director of Sales Development", 
-    personality: "Dynamic leader of SDR/BDR teams driving pipeline growth",
-    voiceId: "pFZP5JQG7iQjIQuC4Bku"
-  },
-  { 
-    id: "marcus", 
-    name: "Marcus", 
-    style: "Sales Operations Manager", 
-    personality: "Expert in optimizing sales processes, CRM systems, and analytics",
-    voiceId: "CwhRBWXzGAHq8TQ4Fs17"
-  },
-  {
-    id: "sophia",
-    name: "Sophia",
-    style: "VP of Marketing",
-    personality: "Strategic marketing leader focused on lead generation and revenue marketing initiatives",
-    voiceId: "EXAVITQu4vr4xnSDxMaL"
-  },
-  {
-    id: "alex",
-    name: "Alex",
-    style: "Director of Customer Success",
-    personality: "Customer success leader specializing in renewals and expansion revenue strategies",
-    voiceId: "TX3LPaxmHKxFdv7VOQHJ"
-  },
-  {
-    id: "maya",
-    name: "Maya",
-    style: "VP of Business Development",
-    personality: "Strategic partnership and growth expert in financial services",
-    voiceId: "pFZP5JQG7iQjIQuC4Bku"
-  },
-  {
-    id: "james",
-    name: "James",
-    style: "Chief Financial Officer",
-    personality: "Strategic CFO controlling budgets and financial decisions for technology investments",
-    voiceId: "CwhRBWXzGAHq8TQ4Fs17"
-  },
-  {
-    id: "emma",
-    name: "Emma",
-    style: "Risk & Compliance Manager",
-    personality: "Expert in regulatory compliance for SaaS and FinTech solutions",
-    voiceId: "EXAVITQu4vr4xnSDxMaL"
-  },
-  {
-    id: "daniel",
-    name: "Daniel",
-    style: "Head of Lending",
-    personality: "Banking executive overseeing commercial and retail loan products",
-    voiceId: "TX3LPaxmHKxFdv7VOQHJ"
-  },
-  {
-    id: "lisa",
-    name: "Lisa",
-    style: "Investment Director",
-    personality: "Investment professional evaluating financial tech and SaaS tools for investment firms",
-    voiceId: "pFZP5JQG7iQjIQuC4Bku"
-  },
-  {
-    id: "michael",
-    name: "Michael",
-    style: "Procurement Manager",
-    personality: "Strategic vendor selection specialist for financial services institutions",
-    voiceId: "CwhRBWXzGAHq8TQ4Fs17"
-  },
-  {
-    id: "sarah",
-    name: "Sarah",
-    style: "Chief Medical Information Officer",
-    personality: "Healthcare IT leader managing technology decisions and implementations",
-    voiceId: "EXAVITQu4vr4xnSDxMaL"
-  },
-  {
-    id: "ryan",
-    name: "Ryan",
-    style: "Director of Patient Experience",
-    personality: "Healthcare innovator focused on improving care through new technologies",
-    voiceId: "TX3LPaxmHKxFdv7VOQHJ"
-  },
-  {
-    id: "olivia",
-    name: "Olivia",
-    style: "VP of Operations",
-    personality: "Healthcare system executive overseeing business processes and SaaS implementations",
-    voiceId: "pFZP5JQG7iQjIQuC4Bku"
-  },
-  {
-    id: "david",
-    name: "David",
-    style: "Medical Director",
-    personality: "Clinical leader evaluating technology solutions for hospitals and clinics",
-    voiceId: "CwhRBWXzGAHq8TQ4Fs17"
-  }
-];
-
-const rolePlayTypes = ["cold call", "discovery call"];
+import { AvatarSelection } from "@/components/dashboard/AvatarSelection";
+import { RolePlayTypeSelection } from "@/components/dashboard/RolePlayTypeSelection";
+import { DescriptionInput } from "@/components/dashboard/DescriptionInput";
+import { ChatInterface } from "@/components/dashboard/ChatInterface";
+import { avatars, rolePlayTypes } from "@/components/dashboard/data";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -140,7 +27,6 @@ const Dashboard = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const [isDescriptionRecording, setIsDescriptionRecording] = useState(false);
@@ -148,6 +34,12 @@ const Dashboard = () => {
   const descriptionChunksRef = useRef<Blob[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+  const rolePlayTypeRef = useRef<HTMLDivElement>(null);
+
+  const handleAvatarSelect = (avatarId: string) => {
+    setSelectedAvatar(avatarId);
+    rolePlayTypeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   useEffect(() => {
     if (currentSession) {
@@ -275,11 +167,6 @@ const Dashboard = () => {
 
       setNewMessage("");
       await loadMessages();
-      
-      // Speak the AI's response
-      if (data.response) {
-        await speakText(data.response);
-      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -473,49 +360,6 @@ const Dashboard = () => {
     }
   };
 
-  const speakText = async (text: string) => {
-    if (isSpeaking) return;
-    
-    try {
-      setIsSpeaking(true);
-      const { data, error } = await supabase.functions.invoke('handle-speech', {
-        body: { audio: text, type: 'text-to-speech' }
-      });
-
-      if (error) throw error;
-
-      if (data.audioContent) {
-        const binaryString = atob(data.audioContent);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const audioBlob = new Blob([bytes], { type: 'audio/mp3' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        const audio = new Audio(audioUrl);
-        audio.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        audio.onerror = (e) => {
-          console.error('Audio playback error:', e);
-          setIsSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        await audio.play();
-      }
-    } catch (error) {
-      console.error('Error converting text to speech:', error);
-      toast({
-        title: "Error",
-        description: "Failed to convert text to speech",
-        variant: "destructive",
-      });
-      setIsSpeaking(false);
-    }
-  };
-
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -559,225 +403,48 @@ const Dashboard = () => {
             <div className="max-w-4xl mx-auto space-y-12">
               {!currentSession ? (
                 <>
-                  <section>
-                    <h2 className="text-2xl font-semibold mb-6">Select an AI Avatar:</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                      {avatars.map((avatar) => {
-                        const avatarPublicUrl = supabase.storage
-                          .from('avatars')
-                          .getPublicUrl(`${avatar.id}.jpg`).data.publicUrl;
+                  <AvatarSelection
+                    avatars={avatars}
+                    selectedAvatar={selectedAvatar}
+                    onSelect={handleAvatarSelect}
+                  />
 
-                        return (
-                          <div 
-                            key={avatar.id}
-                            className={`cursor-pointer text-center p-4 rounded-lg transition-all ${
-                              selectedAvatar === avatar.id 
-                                ? 'ring-2 ring-[#1E90FF] bg-blue-50' 
-                                : 'hover:bg-gray-50'
-                            }`}
-                            onClick={() => setSelectedAvatar(avatar.id)}
-                          >
-                            <Avatar className="w-32 h-32 mx-auto mb-4 rounded-lg">
-                              <AvatarImage src={avatarPublicUrl} alt={avatar.name} />
-                            </Avatar>
-                            <h3 className="font-semibold text-lg text-gray-900">{avatar.name}</h3>
-                            <p className="text-sm text-gray-500 mb-2">{avatar.style}</p>
-                            <p className="text-xs text-gray-600">{avatar.personality}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
+                  <RolePlayTypeSelection
+                    ref={rolePlayTypeRef}
+                    types={rolePlayTypes}
+                    selectedType={selectedRolePlay}
+                    onSelect={setSelectedRolePlay}
+                  />
 
-                  <section>
-                    <h2 className="text-2xl font-semibold mb-6">Type of role play:</h2>
-                    <div className="flex gap-4 flex-wrap">
-                      {rolePlayTypes.map((type) => (
-                        <button
-                          key={type}
-                          className={`px-6 py-3 rounded-lg border ${
-                            selectedRolePlay === type 
-                              ? 'border-[#1E90FF] text-[#1E90FF]' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => setSelectedRolePlay(type)}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section>
-                    <h2 className="text-2xl font-semibold mb-6">
-                      Tell me about your role-play situation. What are you looking to achieve?
-                    </h2>
-                    <div className="relative">
-                      <textarea
-                        value={rolePlayDescription}
-                        onChange={(e) => setRolePlayDescription(e.target.value)}
-                        placeholder="Start writing here..."
-                        className="w-full h-48 p-4 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#1E90FF] focus:border-transparent pr-12"
-                      />
-                      <Button
-                        className={`absolute right-2 top-2 ${
-                          isDescriptionRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
-                        } text-white rounded-full p-2`}
-                        size="icon"
-                        onClick={isDescriptionRecording ? stopDescriptionRecording : startDescriptionRecording}
-                      >
-                        {isDescriptionRecording ? (
-                          <StopCircle className="h-4 w-4" />
-                        ) : (
-                          <Mic className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </section>
+                  <DescriptionInput
+                    value={rolePlayDescription}
+                    onChange={setRolePlayDescription}
+                    isRecording={isDescriptionRecording}
+                    onStartRecording={startDescriptionRecording}
+                    onStopRecording={stopDescriptionRecording}
+                  />
 
                   <Button 
                     className="w-full max-w-md mx-auto block py-6 text-lg bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
                     onClick={startRoleplay}
+                    data-start-roleplay
                   >
                     Start Role Play
                   </Button>
                 </>
               ) : (
-                <div className="h-[calc(100vh-8rem)] flex flex-col">
-                  {currentSession.score !== undefined && currentSession.feedback && (
-                    <div className="mb-4 p-6 bg-gray-50 rounded-lg">
-                      <h3 className="text-xl font-semibold mb-2">Roleplay Analysis</h3>
-                      <div className="mb-4">
-                        <div className="text-3xl font-bold text-blue-600">
-                          Score: {currentSession.score}/100
-                        </div>
-                      </div>
-                      <div className="prose">
-                        <h4 className="text-lg font-semibold mb-2">Feedback</h4>
-                        <p className="whitespace-pre-wrap">{currentSession.feedback}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex-1 flex">
-                    {/* Avatar Section */}
-                    <div className="w-1/3 p-4 flex flex-col items-center">
-                      {currentSession.avatar_id && (
-                        <>
-                          <div className="relative w-64 h-64 mb-4">
-                            <Avatar className="w-full h-full rounded-lg">
-                              <AvatarImage 
-                                src={supabase.storage
-                                  .from('avatars')
-                                  .getPublicUrl(`${currentSession.avatar_id}.jpg`).data.publicUrl} 
-                                alt={avatars.find(a => a.id === currentSession.avatar_id)?.name} 
-                              />
-                            </Avatar>
-                            {isRecording && (
-                              <div className="absolute bottom-4 right-4 w-4 h-4">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
-                              </div>
-                            )}
-                            {isSpeaking && (
-                              <div className="absolute bottom-4 right-4 w-4 h-4">
-                                <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500"></span>
-                              </div>
-                            )}
-                          </div>
-                          <h2 className="text-xl font-semibold mb-2">
-                            {avatars.find(a => a.id === currentSession.avatar_id)?.name}
-                          </h2>
-                          <p className="text-sm text-gray-600 text-center mb-4">
-                            {avatars.find(a => a.id === currentSession.avatar_id)?.personality}
-                          </p>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Chat Section */}
-                    <div className="w-2/3 flex flex-col">
-                      <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg">
-                        {messages.map((message) => (
-                          <div
-                            key={message.id}
-                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                          >
-                            <div
-                              className={`max-w-[80%] p-4 rounded-lg ${
-                                message.role === 'user'
-                                  ? 'bg-[#1E90FF] text-white'
-                                  : 'bg-gray-100 text-gray-900'
-                              } relative group`}
-                            >
-                              {message.content}
-                              {message.role === 'ai' && (
-                                <Button
-                                  className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  variant="secondary"
-                                  size="icon"
-                                  onClick={() => speakText(message.content)}
-                                >
-                                  <Volume2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="flex gap-4">
-                        <input
-                          type="text"
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          placeholder="Type your message..."
-                          className="flex-1 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              sendMessage();
-                            }
-                          }}
-                        />
-                        <Button
-                          className={`${isRecording ? 'bg-red-500' : 'bg-blue-500'} hover:bg-opacity-90 text-white`}
-                          onClick={isRecording ? stopRecording : startRecording}
-                        >
-                          {isRecording ? (
-                            <StopCircle className="w-5 h-5" />
-                          ) : (
-                            <Mic className="w-5 h-5" />
-                          )}
-                        </Button>
-                        <Button
-                          className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white px-6"
-                          onClick={() => sendMessage()}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? (
-                            "Sending..."
-                          ) : (
-                            <>
-                              <Send className="w-5 h-5 mr-2" />
-                              Send
-                            </>
-                          )}
-                        </Button>
-                        {messages.length > 0 && !currentSession.score && (
-                          <Button
-                            className="bg-green-600 hover:bg-green-700 text-white px-6"
-                            onClick={requestScoring}
-                            disabled={isLoading}
-                          >
-                            Get Feedback
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <ChatInterface
+                  session={currentSession}
+                  messages={messages}
+                  onSendMessage={sendMessage}
+                  onRequestScoring={requestScoring}
+                  isRecording={isRecording}
+                  onStartRecording={startRecording}
+                  onStopRecording={stopRecording}
+                  isLoading={isLoading}
+                  newMessage={newMessage}
+                  onNewMessageChange={setNewMessage}
+                />
               )}
             </div>
           </div>
