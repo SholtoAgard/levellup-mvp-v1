@@ -260,11 +260,11 @@ const RolePlay = () => {
   };
 
   const handleBackClick = () => {
-    if (audioRef.current) {
+    if (audioRef?.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0; // Reset audio position
     }
-    if (mediaRecorderRef.current) {
+    if (mediaRecorderRef?.current) {
       mediaRecorderRef.current.stream
         .getTracks()
         .forEach((track) => track.stop());
