@@ -25,6 +25,8 @@ const CheckoutForm = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [step, setStep] = useState<'payment' | 'signup'>('payment');
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
 
@@ -70,10 +72,16 @@ const CheckoutForm = () => {
     try {
       setLoading(true);
 
-      // Sign up the user
+      // Sign up the user with additional metadata
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName
+          }
+        }
       });
 
       if (signUpError) {
@@ -108,7 +116,9 @@ const CheckoutForm = () => {
       const { error: onboardingError } = await supabase.functions.invoke('add-trial-user', {
         body: { 
           email,
-          userId: user.id
+          userId: user.id,
+          firstName,
+          lastName
         }
       });
 
@@ -149,6 +159,32 @@ const CheckoutForm = () => {
   if (step === 'signup') {
     return (
       <form onSubmit={handleSignupSubmit} className="space-y-6">
+        <div>
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+            First Name
+          </label>
+          <input
+            id="firstName"
+            type="text"
+            required
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+          />
+        </div>
+        <div>
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+            Last Name
+          </label>
+          <input
+            id="lastName"
+            type="text"
+            required
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+          />
+        </div>
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email
@@ -245,7 +281,6 @@ const SubscriptionPage = () => {
                 "120 minutes of AI role-playing per month",
                 "Email customer support (standard response time)",
                 "Basic AI-generated feedback & scoring (e.g., tone, confidence, objection handling)",
-                "Real-time AI feedback on objections, tonality, and confidence",
                 "Practice cold calls, discovery calls, and objection handling",
                 "Track your progress & improve faster"
               ].map((feature, index) => (
