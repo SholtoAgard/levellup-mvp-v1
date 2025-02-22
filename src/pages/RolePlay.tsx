@@ -24,6 +24,7 @@ const RolePlay = () => {
   const chunksRef = useRef<Blob[]>([]);
   const isMobile = useIsMobile();
   const [showCallScreen, setShowCallScreen] = useState(false);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     if (!session) {
@@ -205,6 +206,7 @@ const RolePlay = () => {
         const audioUrl = URL.createObjectURL(audioBlob);
 
         const audio = new Audio(audioUrl);
+        audioRef.current = audio;
         audio.onended = () => {
           setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
@@ -257,6 +259,20 @@ const RolePlay = () => {
     }
   };
 
+  const handleBackClick = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0; // Reset audio position
+    }
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
+      mediaRecorderRef.current = null;
+    }
+    navigate("/dashboard");
+  };
+
   if (showCallScreen && session) {
     return <CallScreen session={session} />;
   }
@@ -269,7 +285,7 @@ const RolePlay = () => {
             <div className="flex items-center">
               <Button
                 variant="ghost"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => handleBackClick}
                 className="mr-2 sm:mr-4"
                 size={isMobile ? "sm" : "default"}
               >

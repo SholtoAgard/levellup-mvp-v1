@@ -208,7 +208,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       } else if (db < minDb) {
         silenceCounter++;
         if (
-          silenceCounter > 200 &&
+          silenceCounter > 300 &&
           !isSilent &&
           speechDetected &&
           mediaRecorderRef.current.state === "recording"
