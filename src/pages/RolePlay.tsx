@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -348,37 +348,6 @@ const RolePlay = () => {
             </div>
 
             <div className="w-full lg:w-2/3 flex flex-col">
-              <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 border rounded-lg min-h-[300px] sm:min-h-[400px] bg-white">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[85%] sm:max-w-[80%] p-3 sm:p-4 rounded-lg ${
-                        message.role === "user"
-                          ? "bg-[#1E90FF] text-white"
-                          : "bg-gray-100 text-gray-900"
-                      } relative group`}
-                    >
-                      {message.content}
-                      {message.role === "ai" && (
-                        <Button
-                          className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                          variant="secondary"
-                          size="icon"
-                          onClick={() => speakText(message.content)}
-                        >
-                          <Volume2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
               <div className="flex gap-2 sm:gap-4">
                 <input
                   type="text"
