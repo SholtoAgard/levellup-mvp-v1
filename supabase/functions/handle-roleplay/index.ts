@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
@@ -18,106 +19,6 @@ interface RoleplayRequest {
   };
   requestScoring?: boolean;
 }
-
-// Define available avatars with their images and buyer personas
-const avatars = {
-  chloe: {
-    name: "Chloe",
-    image: "avatars/chloe.jpg",
-    personality:
-      "Detail-oriented procurement manager who focuses on ROI and needs extensive data to make decisions",
-  },
-  noah: {
-    name: "Noah",
-    image: "avatars/noah.jpg",
-    personality:
-      "Skeptical IT director who prioritizes security and integration capabilities",
-  },
-  veronica: {
-    name: "Veronica",
-    image: "avatars/veronica.jpg",
-    personality:
-      "Budget-conscious operations manager who needs convincing on value proposition",
-  },
-  marcus: {
-    name: "Marcus",
-    image: "avatars/marcus.jpg",
-    personality:
-      "Innovation-focused CTO who challenges vendors on technical specifications and scalability",
-  },
-  sophia: {
-    name: "Sophia",
-    image: "avatars/sophia.jpg",
-    personality:
-      "Strategic marketing leader focused on lead generation and revenue marketing initiatives",
-  },
-  alex: {
-    name: "Alex",
-    image: "avatars/alex.jpg",
-    personality:
-      "Customer success leader specializing in renewals and expansion revenue strategies",
-  },
-  maya: {
-    name: "Maya",
-    image: "avatars/maya.jpg",
-    personality:
-      "Strategic partnership and growth expert in financial services",
-  },
-  james: {
-    name: "James",
-    image: "avatars/james.jpg",
-    personality:
-      "Strategic CFO controlling budgets and financial decisions for technology investments",
-  },
-  emma: {
-    name: "Emma",
-    image: "avatars/emma.jpg",
-    personality:
-      "Expert in regulatory compliance for SaaS and FinTech solutions",
-  },
-  daniel: {
-    name: "Daniel",
-    image: "avatars/daniel.jpg",
-    personality:
-      "Banking executive overseeing commercial and retail loan products",
-  },
-  lisa: {
-    name: "Lisa",
-    image: "avatars/lisa.jpg",
-    personality:
-      "Investment professional evaluating financial tech and SaaS tools for investment firms",
-  },
-  michael: {
-    name: "Michael",
-    image: "avatars/michael.jpg",
-    personality:
-      "Strategic vendor selection specialist for financial services institutions",
-  },
-  sarah: {
-    name: "Sarah",
-    image: "avatars/sarah.jpg",
-    personality:
-      "Healthcare IT leader managing technology decisions and implementations",
-  },
-  ryan: {
-    name: "Ryan",
-    image: "avatars/ryan.jpg",
-    personality:
-      "Healthcare innovator focused on improving care through new technologies",
-  },
-  olivia: {
-    name: "Olivia",
-    image: "avatars/olivia.jpg",
-    personality:
-      "Healthcare system executive overseeing business processes and SaaS implementations",
-  },
-  david: {
-    name: "David",
-    image: "avatars/david.jpg",
-    personality:
-      "Clinical leader evaluating technology solutions for hospitals and clinics",
-  },
-};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -168,7 +69,7 @@ FEEDBACK: [detailed feedback]`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "gpt-4o-mini",
+            model: "gpt-4",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: conversation },
@@ -206,12 +107,10 @@ FEEDBACK: [detailed feedback]`;
     }
 
     // Handle regular message exchange
-    let systemPrompt =
-      "You are an AI sales roleplay partner acting as a potential buyer. ";
+    let systemPrompt = "You are an AI sales roleplay partner acting as a potential buyer. ";
+    
     if (context) {
-      const avatar = avatars[context.avatar_id as keyof typeof avatars];
-      systemPrompt += `You are playing the role of ${avatar.name}, ${avatar.personality}. 
-      You are evaluating ${context.scenario_description}
+      systemPrompt += `You are evaluating ${context.scenario_description}
       
       Important guidelines:
       1. Always stay in character as a buyer who needs convincing
@@ -226,7 +125,7 @@ FEEDBACK: [detailed feedback]`;
       5. Don't be too easy to convince - make them properly address your concerns
       6. If they make good points, acknowledge them but raise new concerns
       7. Base your responses and objections on their previous statements
-      8. Use your specific buyer persona to frame your concerns
+      8. Keep your responses focused on the specific ${context.roleplay_type} context
       
       Remember: Your goal is to help the user improve their sales skills by providing realistic buyer challenges.`;
     }
@@ -238,7 +137,7 @@ FEEDBACK: [detailed feedback]`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: message },
@@ -258,20 +157,9 @@ FEEDBACK: [detailed feedback]`;
       ]);
     }
 
-    // Get the public URL for the avatar image
-    let avatarUrl = null;
-    if (context?.avatar_id) {
-      const avatar = avatars[context.avatar_id as keyof typeof avatars];
-      const { data } = await supabaseClient.storage
-        .from("avatars")
-        .getPublicUrl(avatar.image);
-      avatarUrl = data.publicUrl;
-    }
-
     return new Response(
       JSON.stringify({
         response: aiResponse,
-        avatar: avatarUrl,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
