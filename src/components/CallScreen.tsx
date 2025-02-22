@@ -25,7 +25,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [callDuration, setCallDuration] = useState(0);
   const [endVoiceCall, setEndVoiceCall] = useState(false);
   const isEndCallRef = useRef(endVoiceCall);
-  const [remainingTime] = useState(99);
   const navigate = useNavigate();
   const { toast } = useToast();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -43,9 +42,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     isThinkingRef.current = isThinking;
   }, [isThinking]);
 
-  useEffect(() => {
-    isListeningRef.current = isListening;
-  }, [isListening]);
+  // useEffect(() => {
+  //   isListeningRef.current = isListening;
+  // }, [isListening]);
 
   useEffect(() => {
     isEndCallRef.current = endVoiceCall;
@@ -155,26 +154,25 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         if (!isEndCallRef.current) {
           console.log("Processing audio data testing...");
 
-          let timeoutId = setTimeout(async () => {
-            // Ensure the conditions are still valid before running processAudioData
-            if (!isSpeakingRef.current && !isThinkingRef.current) {
-              await processAudioData();
+          // let timeoutId = setTimeout(async () => {
+          //   // Ensure the conditions are still valid before running processAudioData
+          if (!isSpeakingRef.current && !isThinkingRef.current) {
+            await processAudioData();
 
-              // Start a new recording only if the latest ref values indicate we should
-              if (!isSpeakingRef.current && !isThinkingRef.current) {
-                startRecording();
-                detectVolume();
-              }
-            }
-          }, 3000); // Delay of 3 seconds
+            // Start a new recording only if the latest ref values indicate we should
+
+            startRecording();
+            detectVolume();
+          }
+          // }, 3000); // Delay of 3 seconds
 
           console.log("isListeningRef", isListeningRef.current);
 
           // Condition to cancel the timeout
-          if (isListeningRef.current) {
-            clearTimeout(timeoutId);
-            console.log("Timeout canceled because x is true");
-          }
+          // if (isListeningRef.current) {
+          //   clearTimeout(timeoutId);
+          //   console.log("Timeout canceled because x is true");
+          // }
         }
       };
 
@@ -215,22 +213,22 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (db > speechThreshold) {
         console.log("Speech detected");
-        setIsListening(true);
-        setIsThinking(false);
+        // setIsListening(true);
+        // setIsThinking(false);
         speechDetected = true; // Speech detected
         silenceCounter = 0;
         isSilent = false;
       } else if (db < minDb) {
         silenceCounter++;
         if (
-          silenceCounter > 80 &&
+          silenceCounter > 200 &&
           !isSilent &&
           speechDetected &&
           mediaRecorderRef.current.state === "recording"
         ) {
           if (!isThinkingRef.current && !isSpeakingRef.current) {
             console.log("Silence detected, stopping recording");
-            setIsListening(false);
+            // setIsListening(false);
             setIsThinking(true);
             isSilent = true;
             mediaRecorderRef.current.stop();
@@ -453,7 +451,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         </div>
         <div className="flex items-center gap-4">
           <span>{formatTime(callDuration)}</span>
-          <span className="text-gray-500">{remainingTime} minutes left</span>
         </div>
       </div>
 
@@ -488,7 +485,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             Listening...
           </div>
         )}
-        {isThinkingRef.current && (
+        {isThinkingRef && (
           <div className="mt-4 px-4 py-2 bg-orange-100 text-orange-600 rounded-full animate-pulse">
             Thinking...
           </div>
