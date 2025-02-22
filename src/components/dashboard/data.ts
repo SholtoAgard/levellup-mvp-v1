@@ -46,8 +46,8 @@ export const avatars = [
     id: "maya",
     name: "Maya",
     style: "VP of Business Development",
-    personality: "Strategic partnership and growth expert in financial services",
-    voiceId: "N2lVS1w4EtoT3dr4eOWO" // Callum
+    personality: "Dynamic and assertive partnership expert driving strategic growth initiatives in financial services",
+    voiceId: "EXAVITQu4vr4xnSDxMaL" // Sarah - Changed to an assertive female voice
   },
   {
     id: "james",
@@ -102,8 +102,8 @@ export const avatars = [
     id: "olivia",
     name: "Olivia",
     style: "VP of Operations",
-    personality: "Healthcare system executive overseeing business processes and SaaS implementations",
-    voiceId: "pqHfZKP75CvOlQylNhV4" // Bill
+    personality: "Assertive and results-driven healthcare system executive leading business process optimization and digital transformation",
+    voiceId: "XB0fDUnXU5powFXDhCwa" // Charlotte - Changed to a confident female voice
   },
   {
     id: "david",
