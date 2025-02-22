@@ -3,9 +3,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { SidebarNav } from "@/components/navigation/SidebarNav";
 
 const Refer = () => {
   const [emails, setEmails] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleSendInvite = () => {
     // Future functionality for sending invites
@@ -14,6 +20,26 @@ const Refer = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {isMobile && (
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-black">LEVELLUP</h1>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <nav className="flex flex-col gap-6 mt-6">
+                  <SidebarNav onNavigation={() => setIsOpen(false)} />
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold text-center mb-12">Refer a Friend</h1>
         
