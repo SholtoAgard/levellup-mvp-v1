@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
@@ -12,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import Footer from "@/components/Footer";
-import { Check } from "lucide-react";
 
 // Initialize Stripe with test publishable key
 const stripePromise = loadStripe("pk_test_51HA5oHHYcRfijJBsAxDzfvHf4LhhKoQputSDEU0rQcBTQvYWQi9ci76CAxSVIcRMjYDuzshvbK0qcxl8gSYnrXIc00axV69scf");
@@ -239,22 +237,6 @@ const SubscriptionPage = () => {
               </div>
               <p className="text-gray-600">after your free trial ends</p>
             </div>
-
-            <ul className="mt-6 space-y-4 text-left mb-8">
-              {[
-                "120 minutes of AI role-playing per month",
-                "Email customer support (standard response time)",
-                "Basic AI-generated feedback & scoring (e.g., tone, confidence, objection handling)",
-                "Real-time AI feedback on objections, tonality, and confidence",
-                "Practice cold calls, discovery calls, and objection handling",
-                "Track your progress & improve faster"
-              ].map((feature, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <Check className="h-[20px] w-[20px] min-w-[20px] mt-1 text-[#1E90FF]" />
-                  <span className="text-gray-600">{feature}</span>
-                </li>
-              ))}
-            </ul>
 
             <Elements stripe={stripePromise}>
               <CheckoutForm />
