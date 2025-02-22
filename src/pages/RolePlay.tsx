@@ -339,49 +339,7 @@ const RolePlay = () => {
             </div>
 
             <div className="w-full lg:w-2/3 flex flex-col">
-              <div className="flex gap-2 sm:gap-4">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 p-2 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E90FF]"
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
-                />
-                <Button
-                  className={`${
-                    isRecording ? "bg-red-500" : "bg-blue-500"
-                  } hover:bg-opacity-90 text-white`}
-                  size={isMobile ? "icon" : "default"}
-                  onClick={isRecording ? stopRecording : startRecording}
-                >
-                  {isRecording ? (
-                    <StopCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                  ) : (
-                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
-                  )}
-                </Button>
-                <Button
-                  className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
-                  onClick={() => sendMessage()}
-                  disabled={isLoading}
-                  size={isMobile ? "icon" : "default"}
-                >
-                  {isLoading ? (
-                    "..."
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                      {!isMobile && <span className="ml-2">Send</span>}
-                    </>
-                  )}
-                </Button>
-              </div>
+              
             </div>
           </div>
         </div>
