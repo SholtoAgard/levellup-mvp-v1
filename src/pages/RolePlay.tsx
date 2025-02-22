@@ -291,7 +291,7 @@ const RolePlay = () => {
     <div className="min-h-screen flex flex-col">
       <div className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-4 sm:mb-8 flex-wrap gap-4">
+          <div className="flex items-center mb-4 sm:mb-8 flex-wrap gap-4">
             <div className="flex items-center">
               <Button
                 variant="ghost"
@@ -305,15 +305,6 @@ const RolePlay = () => {
                 Role Play Session
               </h1>
             </div>
-            <Button
-              onClick={handleGetScore}
-              disabled={isLoading || messages.length < 4}
-              className="bg-amber-500 hover:bg-amber-600"
-              size={isMobile ? "sm" : "default"}
-            >
-              <Award className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Get Your Score
-            </Button>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
