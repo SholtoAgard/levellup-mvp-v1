@@ -1,7 +1,17 @@
 
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 const Refer = () => {
+  const [emails, setEmails] = useState("");
+
+  const handleSendInvite = () => {
+    // Future functionality for sending invites
+    console.log("Sending invites to:", emails.split(",").map(email => email.trim()));
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -15,7 +25,26 @@ const Refer = () => {
             </p>
           </Card>
 
-          {/* Additional sections will be added here */}
+          <Card className="p-6">
+            <h2 className="text-2xl font-semibold mb-4">Invite Friends by Email</h2>
+            <p className="text-gray-700 mb-6">
+              Insert your friends' email addresses and send them invitation to LevellUp.
+            </p>
+            <div className="flex gap-4">
+              <Input
+                placeholder="Enter up to 4 emails separated by comma"
+                value={emails}
+                onChange={(e) => setEmails(e.target.value)}
+                className="flex-1"
+              />
+              <Button 
+                onClick={handleSendInvite}
+                className="bg-green-500 hover:bg-green-600 text-white whitespace-nowrap"
+              >
+                Send invite
+              </Button>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
