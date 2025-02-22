@@ -9,6 +9,15 @@ interface RolePlayTypeSelectionProps {
 
 export const RolePlayTypeSelection = forwardRef(
   ({ types, selectedType, onSelect }: RolePlayTypeSelectionProps, ref: ForwardedRef<HTMLDivElement>) => {
+    const handleTypeSelect = (type: string) => {
+      onSelect(type);
+      // Scroll to the Start Role Play button
+      const startButton = document.querySelector('[data-start-roleplay]');
+      if (startButton) {
+        startButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+
     return (
       <section ref={ref}>
         <h2 className="text-2xl font-semibold mb-6">Type of role play:</h2>
@@ -21,7 +30,7 @@ export const RolePlayTypeSelection = forwardRef(
                   ? 'border-[#1E90FF] text-[#1E90FF]' 
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => onSelect(type)}
+              onClick={() => handleTypeSelect(type)}
             >
               {type}
             </button>

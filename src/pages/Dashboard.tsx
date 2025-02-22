@@ -427,6 +427,7 @@ const Dashboard = () => {
                   <Button 
                     className="w-full max-w-md mx-auto block py-6 text-lg bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
                     onClick={startRoleplay}
+                    data-start-roleplay
                   >
                     Start Role Play
                   </Button>
