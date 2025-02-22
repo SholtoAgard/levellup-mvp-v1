@@ -148,6 +148,12 @@ const Dashboard = () => {
   const descriptionChunksRef = useRef<Blob[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+  const rolePlayTypeRef = useRef<HTMLDivElement>(null);
+
+  const handleAvatarSelect = (avatarId: string) => {
+    setSelectedAvatar(avatarId);
+    rolePlayTypeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   useEffect(() => {
     if (currentSession) {
@@ -276,7 +282,6 @@ const Dashboard = () => {
       setNewMessage("");
       await loadMessages();
       
-      // Speak the AI's response
       if (data.response) {
         await speakText(data.response);
       }
@@ -575,7 +580,7 @@ const Dashboard = () => {
                                 ? 'ring-2 ring-[#1E90FF] bg-blue-50' 
                                 : 'hover:bg-gray-50'
                             }`}
-                            onClick={() => setSelectedAvatar(avatar.id)}
+                            onClick={() => handleAvatarSelect(avatar.id)}
                           >
                             <Avatar className="w-32 h-32 mx-auto mb-4 rounded-lg">
                               <AvatarImage src={avatarPublicUrl} alt={avatar.name} />
@@ -589,7 +594,7 @@ const Dashboard = () => {
                     </div>
                   </section>
 
-                  <section>
+                  <section ref={rolePlayTypeRef}>
                     <h2 className="text-2xl font-semibold mb-6">Type of role play:</h2>
                     <div className="flex gap-4 flex-wrap">
                       {rolePlayTypes.map((type) => (
