@@ -318,6 +318,10 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
           console.log("No error in speak response");
         }
+      } else {
+        setIsThinking(false);
+        startRecording();
+        detectVolume();
       }
     } catch (error) {
       console.error("Error in speech handling:", error);
@@ -382,7 +386,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      const audioBlob = new Blob([bytes], { type: "audio/mp3" });
+      const audioBlob = new Blob([bytes], { type: "audio/mp4" });
       const audioUrl = URL.createObjectURL(audioBlob);
       if (audioRef.current) {
         audioRef.current.pause();
@@ -395,6 +399,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       // ✅ Ensure AudioContext is resumed (important for Safari/iOS)
       if (audioContext && audioContext.state === "suspended") {
+        console.log("Resuming audio context");
+
         await audioContext.resume();
       }
       audio.muted = true; // Start muted
