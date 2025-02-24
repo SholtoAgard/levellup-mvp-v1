@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
 import { log } from "node:console";
+import { useAudioContext } from "@/contexts/AudioContext";
 
 interface CallScreenProps {
   session: RoleplaySession;
@@ -22,7 +23,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const isThinkingRef = useRef(isThinking);
   const isListeningRef = useRef(isListening);
   const audioRef = useRef(null);
-
+  const audioContext = useAudioContext();
   const [callDuration, setCallDuration] = useState(0);
   const [endVoiceCall, setEndVoiceCall] = useState(false);
   const isEndCallRef = useRef(endVoiceCall);
@@ -387,13 +388,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       audioRef.current = audio;
 
       // Ensure AudioContext is resumed (important for Safari/iOS)
-      const audioContext = new (window.AudioContext ||
-        window?.webkitAudioContext)();
-      if (audioContext.state === "suspended") {
-        await audioContext.resume();
-      }
 
       // Ensure audio plays only after user interaction (for autoplay policies)
+
+      if (!audioContext) {
+        console.warn("AudioContext not available.");
+      }
       const playAudio = () => {
         audio
           .play()

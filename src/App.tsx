@@ -1,11 +1,13 @@
-
 import { Outlet } from "react-router-dom";
 import "./App.css";
+import { AudioProvider } from "./contexts/AudioContext";
 
 const App = () => {
   return (
     <div>
-      <Outlet />
+      <AudioProvider>
+        <Outlet />
+      </AudioProvider>
     </div>
   );
 };
