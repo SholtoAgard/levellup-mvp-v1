@@ -622,7 +622,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       </div>
 
       <div className="p-8 flex justify-center gap-4">
-        {showScoreButton && (
+        {/* {showScoreButton && (
           <Button
             size="lg"
             className="bg-green-600 hover:bg-green-700 text-white rounded-full w-16 h-16"
@@ -631,7 +631,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           >
             <Award className="w-6 h-6" />
           </Button>
-        )}
+        )} */}
         <Button
           variant="destructive"
           size="lg"
