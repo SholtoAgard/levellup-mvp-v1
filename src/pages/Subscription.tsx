@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import Footer from "@/components/Footer";
-import { Check } from "lucide-react";
+import { Check, Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 // Initialize Stripe with test publishable key
 const stripePromise = loadStripe("pk_test_51HA5oHHYcRfijJBsAxDzfvHf4LhhKoQputSDEU0rQcBTQvYWQi9ci76CAxSVIcRMjYDuzshvbK0qcxl8gSYnrXIc00axV69scf");
@@ -254,8 +255,43 @@ const CheckoutForm = () => {
 };
 
 const SubscriptionPage = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">LEVELLUP</h1>
+            </div>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <nav className="flex flex-col gap-4 mt-6">
+                  <Button variant="ghost" className="justify-start" onClick={() => {
+                    setIsOpen(false);
+                    window.location.href = "/";
+                  }}>
+                    Home
+                  </Button>
+                  <Button variant="ghost" className="justify-start" onClick={() => {
+                    setIsOpen(false);
+                    window.location.href = "/auth";
+                  }}>
+                    Sign In
+                  </Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+
       <div className="py-12 px-4 sm:px-6 lg:px-8 flex-1">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
