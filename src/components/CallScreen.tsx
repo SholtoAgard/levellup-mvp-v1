@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { toBlobURL } from '@ffmpeg/util';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 interface CallScreenProps {
   session: RoleplaySession;
@@ -23,8 +23,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const isSpeakingRef = useRef(isSpeaking);
   const isThinkingRef = useRef(isThinking);
   const isListeningRef = useRef(isListening);
-  const audioRef = useRef(null);
-  const audioContext = useAudioContext();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [callDuration, setCallDuration] = useState(0);
   const [endVoiceCall, setEndVoiceCall] = useState(false);
   const isEndCallRef = useRef(endVoiceCall);
@@ -83,10 +82,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const loadFFmpeg = async () => {
     if (!ffmpeg.loaded) {
       try {
-        // Load FFmpeg
         await ffmpeg.load({
-          coreURL: await toBlobURL(`/node_modules/@ffmpeg/core/dist/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`/node_modules/@ffmpeg/core/dist/ffmpeg-core.wasm`, 'application/wasm'),
+          coreURL: await toBlobURL('/node_modules/@ffmpeg/core/dist/ffmpeg-core.js', 'text/javascript'),
+          wasmURL: await toBlobURL('/node_modules/@ffmpeg/core/dist/ffmpeg-core.wasm', 'application/wasm'),
         });
         console.log('FFmpeg loaded successfully');
       } catch (error) {
@@ -124,11 +122,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           const ffmpegInstance = await loadFFmpeg();
           
           // Convert Blob to ArrayBuffer
-          const arrayBuffer = await audioBlob.arrayBuffer();
-          const uint8Array = new Uint8Array(arrayBuffer);
-          
-          // Write the input file
-          await ffmpegInstance.writeFile('input.mp4', uint8Array);
+          const audioData = await fetchFile(audioBlob);
+          await ffmpegInstance.writeFile('input.mp4', audioData);
 
           // Convert MP4 to MP3
           await ffmpegInstance.exec([
