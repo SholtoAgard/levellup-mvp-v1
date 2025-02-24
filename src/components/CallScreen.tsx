@@ -95,6 +95,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   //   setConvertedFile(url);
   // };
 
+  const ffmpeg = createFFmpeg({ log: true });
+
   const processAudioData = async () => {
     console.log("inside processAudioData function");
 
@@ -109,7 +111,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       mimeType = "audio/webm";
     }
 
-    const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+    let audioBlob = new Blob(chunksRef.current, { type: mimeType });
     console.log("Recorded MIME Type:", audioBlob.type);
     mediaRecorderRef.current = null;
 
@@ -117,6 +119,39 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
     if (audioBlob.size > 0) {
       console.log("Processing audio blob of size:", audioBlob.size);
+
+      if (mimeType === "audio/mp4") {
+        if (!ffmpeg.isLoaded()) {
+          await ffmpeg.load();
+        }
+
+        // Convert Blob to Uint8Array for FFmpeg
+        const audioData = await fetchFile(audioBlob);
+        ffmpeg.FS("writeFile", "input.mp4", audioData);
+
+        // Convert MP4 to MP3
+        await ffmpeg.run(
+          "-i",
+          "input.mp4",
+          "-vn",
+          "-ar",
+          "44100",
+          "-ac",
+          "2",
+          "-b:a",
+          "192k",
+          "output.mp3"
+        );
+
+        // Get the MP3 file
+        const mp3Data = ffmpeg.FS("readFile", "output.mp3");
+
+        // Create an MP3 Blob
+        const mp3Blob = new Blob([mp3Data.buffer], { type: "audio/mp3" });
+
+        console.log("Converted MP3 Blob:", mp3Blob);
+        audioBlob = mp3Blob;
+      }
 
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
