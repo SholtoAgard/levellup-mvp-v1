@@ -256,6 +256,7 @@ const CheckoutForm = () => {
 
 const SubscriptionPage = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -263,7 +264,13 @@ const SubscriptionPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">LEVELLUP</h1>
+              <Button
+                variant="ghost"
+                className="text-2xl font-bold text-gray-900 px-0 hover:bg-transparent"
+                onClick={() => navigate("/")}
+              >
+                LEVELLUP
+              </Button>
             </div>
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
