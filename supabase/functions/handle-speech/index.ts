@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -14,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audio, type, text, voiceId } = await req.json();
+    const { audio, format, type, text, voiceId } = await req.json();
 
     if (type === "speech-to-text") {
       if (!audio) {
@@ -27,7 +26,7 @@ serve(async (req) => {
           .split("")
           .map((char) => char.charCodeAt(0))
       );
-      const blob = new Blob([audioData], { type: "audio/webm" });
+      const blob = new Blob([audioData], { type: format });
 
       // Create form data for Whisper API
       const formData = new FormData();

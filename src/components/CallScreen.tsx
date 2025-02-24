@@ -91,7 +91,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       reader.onloadend = async () => {
         const base64Audio = reader.result?.toString().split(",")[1];
         if (base64Audio) {
-          await handleSpeech(base64Audio);
+          await handleSpeech(base64Audio, mimeType);
         }
       };
     }
@@ -265,13 +265,17 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     }
   };
 
-  const handleSpeech = async (base64Audio: string) => {
+  const handleSpeech = async (base64Audio: string, mimeType: string) => {
     console.log("handle speech function called");
 
     try {
       const { data: speechData, error: speechError } =
         await supabase.functions.invoke("handle-speech", {
-          body: { audio: base64Audio, type: "speech-to-text" },
+          body: {
+            audio: base64Audio,
+            format: mimeType,
+            type: "speech-to-text",
+          },
         });
 
       if (speechError) throw speechError;
