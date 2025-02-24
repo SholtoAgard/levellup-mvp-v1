@@ -135,6 +135,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (!isSupported) {
         mimeType = "audio/mp3";
+        console.log("mp3 not supported");
+
         isSupported = MediaRecorder.isTypeSupported(mimeType);
       }
 
