@@ -413,6 +413,17 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           { once: true }
         );
       }
+      return new Promise((resolve) => {
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          console.log("Audio playback ended");
+
+          startRecording();
+          detectVolume();
+          setIsSpeaking(false);
+          resolve(null);
+        };
+      });
     }
   };
 
@@ -443,53 +454,57 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const handleGetScore = async () => {
     try {
       setIsLoading(true);
-      
+
       // End the call first
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
       if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+        mediaRecorderRef.current.stream
+          .getTracks()
+          .forEach((track) => track.stop());
         mediaRecorderRef.current = null;
       }
       window.speechSynthesis.cancel();
 
       // Get score and feedback from the roleplay endpoint
-      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
-        body: {
-          sessionId: session.id,
-          requestScoring: true,
-          context: {
-            avatar_id: session.avatar_id,
-            roleplay_type: session.roleplay_type,
-            scenario_description: session.scenario_description
-          }
+      const { data, error } = await supabase.functions.invoke(
+        "handle-roleplay",
+        {
+          body: {
+            sessionId: session.id,
+            requestScoring: true,
+            context: {
+              avatar_id: session.avatar_id,
+              roleplay_type: session.roleplay_type,
+              scenario_description: session.scenario_description,
+            },
+          },
         }
-      });
+      );
 
       if (error) throw error;
 
       // Update session status in database
       const { error: updateError } = await supabase
-        .from('roleplay_sessions')
-        .update({ status: 'completed' })
-        .eq('id', session.id);
+        .from("roleplay_sessions")
+        .update({ status: "completed" })
+        .eq("id", session.id);
 
       if (updateError) throw updateError;
 
       // Navigate to feedback page
-      navigate('/feedback', { 
-        state: { 
+      navigate("/feedback", {
+        state: {
           sessionId: session.id,
           score: data.score,
-          feedback: data.feedback 
+          feedback: data.feedback,
         },
-        replace: true
+        replace: true,
       });
-
     } catch (error) {
-      console.error('Error getting score:', error);
+      console.error("Error getting score:", error);
       toast({
         title: "Error",
         description: "Failed to get conversation score. Please try again.",
