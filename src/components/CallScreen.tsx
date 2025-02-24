@@ -141,7 +141,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (e) => {
-        console.log("Data available:", e.data.size);
+        console.log("Data available: ", e.data.size);
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
