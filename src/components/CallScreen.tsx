@@ -374,31 +374,35 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
+      // Ensure AudioContext is resumed (important for Safari/iOS)
+      const audioContext = new (window.AudioContext ||
+        window?.webkitAudioContext)();
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
       setIsThinking(false);
       setIsSpeaking(true);
-      audio.play();
 
-      return new Promise((resolve) => {
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          console.log("eleven lab audio ended");
+      // Ensure audio plays only after user interaction (for autoplay policies)
+      const playAudio = () => {
+        audio.play().catch((err) => console.error("Playback error:", err));
+      };
 
-          startRecording();
-          detectVolume();
-
-          setIsSpeaking(false);
-          resolve(null);
-        };
-      });
+      if (document.visibilityState === "visible") {
+        playAudio();
+      } else {
+        document.addEventListener(
+          "visibilitychange",
+          () => {
+            if (document.visibilityState === "visible") {
+              playAudio();
+            }
+          },
+          { once: true }
+        );
+      }
     }
-    // } catch (error) {
-    //   console.error("Error in text to speech:", error);
-    //   toast({
-    //     title: "Error",
-    //     description: "Failed to generate speech. Please try again.",
-    //     variant: "destructive",
-    //   });
-    // }
   };
 
   const endCall = () => {
