@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -113,7 +112,7 @@ const Auth = () => {
             </div>
           </form>
 
-          <div className="text-center space-y-4">
+          <div className="text-center">
             <Button
               variant="link"
               onClick={() => setIsSignUp(!isSignUp)}
@@ -123,15 +122,6 @@ const Auth = () => {
                 ? "Already have an account? Sign in"
                 : "Don't have an account? Sign up"}
             </Button>
-            <div>
-              <Button
-                variant="link"
-                onClick={() => navigate('/subscription')}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                Start your free trial
-              </Button>
-            </div>
           </div>
         </div>
       </div>
