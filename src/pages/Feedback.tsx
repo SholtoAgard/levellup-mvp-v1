@@ -1,16 +1,50 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarProvider } from "@/components/ui/sidebar";
-import { Menu } from "lucide-react";
+import { Menu, ArrowLeft } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
 import Footer from "@/components/Footer";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
 
 const Feedback = () => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [chartData, setChartData] = useState([]);
+
+  const score = location.state?.score || 0;
+  const feedback = location.state?.feedback || "";
+
+  useEffect(() => {
+    // Generate chart data based on score
+    const data = [
+      { name: "Communication", value: Math.min(100, score + Math.random() * 10 - 5) },
+      { name: "Clarity", value: Math.min(100, score + Math.random() * 10 - 5) },
+      { name: "Engagement", value: Math.min(100, score + Math.random() * 10 - 5) },
+      { name: "Overall", value: score }
+    ];
+    setChartData(data);
+  }, [score]);
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    return "text-red-600";
+  };
 
   return (
     <SidebarProvider>
@@ -52,12 +86,62 @@ const Feedback = () => {
           )}
 
           <div className="p-8 flex-1">
-            <div className="max-w-3xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">Help Me Build the #1 Sales Training Platform</h1>
-              <div className="prose prose-lg">
-                <p className="text-gray-600">At LevellUp, my mission is to build the most effective sales training platform. I need your help! Your feedback is crucial in shaping LevellUp into the ultimate tool for sales reps. By sharing your thoughts, you'll directly improve the platform. Click the "Give Your Feedback" button to take a quick 3-5 minute survey. Thank you for helping me level up!</p>
-                <Button size="lg" className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white" onClick={() => window.open('https://forms.gle/nWB65dFyuc8ctN5v6', '_blank')}>
-                  Give Your Feedback
+            <div className="max-w-4xl mx-auto">
+              <Button
+                variant="ghost"
+                className="mb-6"
+                onClick={() => navigate('/dashboard')}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+              </Button>
+
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Your Performance Score</span>
+                    <span className={`text-4xl ${getScoreColor(score)}`}>
+                      {score}/100
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px] mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis domain={[0, 100]} />
+                        <Tooltip />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#1E90FF"
+                          strokeWidth={2}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Detailed Feedback</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose max-w-none">
+                    <p className="whitespace-pre-wrap text-gray-700">{feedback}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="mt-8 text-center">
+                <Button 
+                  size="lg"
+                  className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+                  onClick={() => navigate('/dashboard')}
+                >
+                  Start New Practice
                 </Button>
               </div>
             </div>

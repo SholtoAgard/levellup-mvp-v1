@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Phone, Mic, MicOff } from "lucide-react";
+import { Phone, Mic, MicOff, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
@@ -11,7 +11,7 @@ interface CallScreenProps {
   session: RoleplaySession;
 }
 
-let mediaRecorder;
+let mediaRecorder: MediaRecorder;
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
@@ -33,6 +33,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const processingAudioRef = useRef(false);
+  const [showScoreButton, setShowScoreButton] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
@@ -55,8 +57,17 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     const timer = setInterval(() => {
       setCallDuration((prev) => prev + 1);
     }, 1000);
+    const scoreButtonTimer = setTimeout(() => {
+      setShowScoreButton(true);
+      toast({
+        title: "Score Available",
+        description: "You can now get feedback on your conversation!",
+      });
+    }, 60000); // 60 seconds = 1 minute
+
     return () => {
       clearInterval(timer);
+      clearTimeout(scoreButtonTimer);
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
@@ -429,6 +440,66 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     navigate(-1);
   };
 
+  const handleGetScore = async () => {
+    try {
+      setIsLoading(true);
+      
+      // End the call first
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+        mediaRecorderRef.current = null;
+      }
+      window.speechSynthesis.cancel();
+
+      // Get score and feedback from the roleplay endpoint
+      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
+        body: {
+          sessionId: session.id,
+          requestScoring: true,
+          context: {
+            avatar_id: session.avatar_id,
+            roleplay_type: session.roleplay_type,
+            scenario_description: session.scenario_description
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // Update session status in database
+      const { error: updateError } = await supabase
+        .from('roleplay_sessions')
+        .update({ status: 'completed' })
+        .eq('id', session.id);
+
+      if (updateError) throw updateError;
+
+      // Navigate to feedback page
+      navigate('/feedback', { 
+        state: { 
+          sessionId: session.id,
+          score: data.score,
+          feedback: data.feedback 
+        },
+        replace: true
+      });
+
+    } catch (error) {
+      console.error('Error getting score:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get conversation score. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -498,7 +569,17 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         )}
       </div>
 
-      <div className="p-8 flex justify-center">
+      <div className="p-8 flex justify-center gap-4">
+        {showScoreButton && (
+          <Button
+            size="lg"
+            className="bg-green-600 hover:bg-green-700 text-white rounded-full w-16 h-16"
+            onClick={handleGetScore}
+            disabled={isLoading}
+          >
+            <Award className="w-6 h-6" />
+          </Button>
+        )}
         <Button
           variant="destructive"
           size="lg"
