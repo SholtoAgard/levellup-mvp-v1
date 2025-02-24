@@ -393,12 +393,16 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         await audioContext.resume();
       }
 
-      setIsThinking(false);
-      setIsSpeaking(true);
-
       // Ensure audio plays only after user interaction (for autoplay policies)
       const playAudio = () => {
-        audio.play().catch((err) => console.error("Playback error:", err));
+        audio
+          .play()
+          .then(() => {
+            console.log("Audio played");
+            setIsThinking(false);
+            setIsSpeaking(true);
+          })
+          .catch((err) => console.log("Playback error:", err));
       };
 
       if (document.visibilityState === "visible") {
