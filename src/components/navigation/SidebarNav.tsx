@@ -60,7 +60,7 @@ export const SidebarNav = ({ onNavigation }: { onNavigation?: () => void }) => {
         <SidebarMenuButton 
           className="w-full text-black"
           onClick={() => {
-            navigate('/feedback');
+            navigate('/user-survey');
             onNavigation?.();
           }}
         >
