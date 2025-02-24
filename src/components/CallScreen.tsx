@@ -79,6 +79,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     console.log("MIME Type before blob", mimeType);
     const audioBlob = new Blob(chunksRef.current, { type: mimeType });
     console.log("Recorded MIME Type:", audioBlob.type);
+    mediaRecorderRef.current = null;
 
     chunksRef.current = [];
 
@@ -149,7 +150,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       mediaRecorder.onstop = async () => {
         console.log("endVoiceCallRef", isEndCallRef);
-        mediaRecorderRef.current = null;
+
         console.log(
           "MediaRecorder stopped, isSpeaking:",
           isSpeakingRef.current,
