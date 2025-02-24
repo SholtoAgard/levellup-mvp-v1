@@ -142,12 +142,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       }
 
       if (!isSupported) {
-        mimeType = "audio/mp4";
+        mimeType = "audio/wav";
         isSupported = MediaRecorder.isTypeSupported(mimeType);
       }
 
       if (!isSupported) {
-        mimeType = "audio/wav";
+        mimeType = "audio/mp4";
         isSupported = MediaRecorder.isTypeSupported(mimeType);
       }
 
