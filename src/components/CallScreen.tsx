@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,6 @@ import { Phone, Mic, MicOff, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
-import { log } from "node:console";
-import { useAudioContext } from "@/contexts/AudioContext";
 import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 
 interface CallScreenProps {
@@ -15,6 +14,7 @@ interface CallScreenProps {
 }
 
 let mediaRecorder: MediaRecorder;
+const ffmpeg = createFFmpeg({ log: true });
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
