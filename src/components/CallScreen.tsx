@@ -74,6 +74,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     processingAudioRef.current = true;
     const mimeType =
       mediaRecorderRef.current?.mimeType || "audio/webm;codecs=opus";
+    console.log("mediaRecorder:", mediaRecorderRef.current);
+
     console.log("MIME Type before blob", mimeType);
     const audioBlob = new Blob(chunksRef.current, { type: mimeType });
     console.log("Recorded MIME Type:", audioBlob.type);
