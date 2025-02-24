@@ -384,8 +384,19 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       const audioBlob = new Blob([bytes], { type: "audio/mp3" });
       const audioUrl = URL.createObjectURL(audioBlob);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.src = ""; // Force cleanup
+      }
+
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
+
+      // ✅ Ensure AudioContext is resumed (important for Safari/iOS)
+      if (audioContext && audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
       audio.muted = true; // Start muted
 
       // Ensure AudioContext is resumed (important for Safari/iOS)
