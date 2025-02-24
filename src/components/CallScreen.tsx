@@ -394,6 +394,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       if (!audioContext) {
         console.warn("AudioContext not available.");
       }
+
+      console.log("audio context,", audioContext);
+
       const playAudio = () => {
         audio
           .play()
