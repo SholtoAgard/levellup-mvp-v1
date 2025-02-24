@@ -134,6 +134,11 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       let isSupported = MediaRecorder.isTypeSupported(mimeType);
 
       if (!isSupported) {
+        mimeType = "audio/mp3";
+        isSupported = MediaRecorder.isTypeSupported(mimeType);
+      }
+
+      if (!isSupported) {
         mimeType = "audio/mp4";
         isSupported = MediaRecorder.isTypeSupported(mimeType);
       }
@@ -386,7 +391,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      const audioBlob = new Blob([bytes], { type: "audio/mp4" });
+      const audioBlob = new Blob([bytes], { type: "audio/mp3" });
       const audioUrl = URL.createObjectURL(audioBlob);
       if (audioRef.current) {
         audioRef.current.pause();
