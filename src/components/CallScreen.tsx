@@ -404,10 +404,10 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           .then(() => {
             audio.muted = false;
             console.log("Audio played");
+            setIsThinking(false);
+            setIsSpeaking(true);
           })
           .catch((err) => console.log("Playback error:", err));
-        setIsThinking(false);
-        setIsSpeaking(true);
       };
 
       if (document.visibilityState === "visible") {
