@@ -6,6 +6,7 @@ import { Phone, Mic, MicOff, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
+import { log } from "node:console";
 
 interface CallScreenProps {
   session: RoleplaySession;
@@ -401,6 +402,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       };
 
       if (document.visibilityState === "visible") {
+        console.log("document.visibilityState", document.visibilityState);
+
         playAudio();
       } else {
         document.addEventListener(
