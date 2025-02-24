@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -13,24 +14,25 @@ serve(async (req) => {
   }
 
   try {
-    const { audio, format, type, text, voiceId } = await req.json();
+    const { audio, type, text, voiceId, format = "audio/webm" } = await req.json();
 
     if (type === "speech-to-text") {
       if (!audio) {
         throw new Error("No audio data provided");
       }
 
-      // Process audio data
+      // Process audio data with dynamic format
       const audioData = new Uint8Array(
         atob(audio)
           .split("")
           .map((char) => char.charCodeAt(0))
       );
+      console.log("Using audio format:", format);
       const blob = new Blob([audioData], { type: format });
 
       // Create form data for Whisper API
       const formData = new FormData();
-      formData.append("file", blob, "audio.webm");
+      formData.append("file", blob, `audio.${format.split('/')[1]}`);
       formData.append("model", "whisper-1");
       formData.append("language", "en"); // Force English language
       formData.append("response_format", "json");
