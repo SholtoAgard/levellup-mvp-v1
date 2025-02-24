@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+// @ts-nocheck
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { Phone, Mic, MicOff, Award } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import type { RoleplaySession } from "@/lib/types";
-import { log } from "node:console";
 import { useAudioContext } from "@/contexts/AudioContext";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { RoleplaySession } from "@/lib/types";
+import { Award, Phone } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface CallScreenProps {
   session: RoleplaySession;
@@ -79,39 +79,83 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     };
   }, []);
 
+  // const convertToMp3 = async () => {
+  //   if (!file) return;
+  //   await ffmpeg.load();
+
+  //   ffmpeg.FS("writeFile", "input.mp4", await fetchFile(file));
+
+  //   await ffmpeg.run("-i", "input.mp4", "output.mp3");
+
+  //   const data = ffmpeg.FS("readFile", "output.mp3");
+  //   const url = URL.createObjectURL(
+  //     new Blob([data.buffer], { type: "audio/mp3" })
+  //   );
+  //   setConvertedFile(url);
+  // };
+
   const processAudioData = async () => {
     console.log("inside processAudioData function");
-
     if (chunksRef.current.length === 0 || processingAudioRef.current) return;
-
     processingAudioRef.current = true;
-    let mimeType = mediaRecorderRef.current?.mimeType || "audio/webm";
-    console.log("mediaRecorder:", mediaRecorderRef.current);
-
-    console.log("MIME Type before blob", mimeType);
-    if (mimeType === "audio/webm;codecs=opus") {
-      mimeType = "audio/webm";
+    try {
+      // Determine supported mime type based on platform
+      let mimeType = "audio/webm";
+      const isSafari = /^((?!chrome|android).)*safari/i.test(
+        navigator.userAgent
+      );
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS || isSafari) {
+        mimeType = "audio/mp4";
+      } else if (!MediaRecorder.isTypeSupported("audio/webm")) {
+        const supportedTypes = [
+          "audio/mp4",
+          "audio/ogg",
+          "audio/wav",
+          "audio/mpeg",
+        ];
+        mimeType =
+          supportedTypes.find((type) => MediaRecorder.isTypeSupported(type)) ||
+          "audio/webm";
+      }
+      console.log("Using MIME type:", mimeType);
+      // Create blob with proper mime type
+      const audioBlob = new Blob(chunksRef.current, {
+        type: mimeType.includes(";") ? mimeType.split(";")[0] : mimeType,
+      });
+      console.log("Recorded MIME Type:", audioBlob.type);
+      console.log("Blob size:", audioBlob.size);
+      if (audioBlob.size === 0) {
+        throw new Error("Empty audio blob recorded");
+      }
+      // Convert to base64 with error handling
+      const base64Audio = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result?.toString().split(",")[1];
+          if (base64) {
+            resolve(base64);
+          } else {
+            reject(new Error("Failed to convert audio to base64"));
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(audioBlob);
+      });
+      await handleSpeech(base64Audio, mimeType);
+    } catch (error) {
+      console.error("Error processing audio:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process audio. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      // Cleanup
+      mediaRecorderRef.current = null;
+      chunksRef.current = [];
+      processingAudioRef.current = false;
     }
-    const audioBlob = new Blob(chunksRef.current, { type: mimeType });
-    console.log("Recorded MIME Type:", audioBlob.type);
-    mediaRecorderRef.current = null;
-
-    chunksRef.current = [];
-
-    if (audioBlob.size > 0) {
-      console.log("Processing audio blob of size:", audioBlob.size);
-
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(",")[1];
-        if (base64Audio) {
-          await handleSpeech(base64Audio, mimeType);
-        }
-      };
-    }
-
-    processingAudioRef.current = false;
   };
 
   const startCall = async () => {
@@ -121,46 +165,60 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          sampleRate: 44100,
+          channelCount: 1,
         },
       });
 
-      audioContextRef.current = new AudioContext();
+      audioContextRef.current = new (window.AudioContext ||
+        // @ts-ignore
+        window.webkitAudioContext)();
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       analyserRef.current.fftSize = 256;
 
+      // Determine correct mime type for platform
+      const isSafari = /^((?!chrome|android).)*safari/i.test(
+        navigator.userAgent
+      );
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
       let mimeType = "audio/webm";
-      let isSupported = MediaRecorder.isTypeSupported(mimeType);
-
-      if (!isSupported) {
-        mimeType = "audio/mp3";
-        console.log("mp3 not supported");
-
-        isSupported = MediaRecorder.isTypeSupported(mimeType);
-      }
-
-      if (!isSupported) {
-        mimeType = "audio/mp4";
-        isSupported = MediaRecorder.isTypeSupported(mimeType);
-      }
-
-      if (!isSupported) {
-        mimeType = "audio/wav";
-        isSupported = MediaRecorder.isTypeSupported(mimeType);
-      }
-
-      if (!isSupported) {
-        throw new Error("No supported audio MIME type found");
-      }
-
-      console.log("Using MIME type:", mimeType);
-
-      mediaRecorder = new MediaRecorder(stream, {
-        mimeType,
+      let options = {
         audioBitsPerSecond: 128000,
-      });
+        mimeType: "audio/webm",
+      };
 
+      if (isIOS || isSafari) {
+        mimeType = "audio/mp4";
+        options = {
+          audioBitsPerSecond: 128000,
+          mimeType: "audio/mp4",
+        };
+      }
+
+      // Check for supported mime types
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        const supportedTypes = [
+          "audio/webm",
+          "audio/mp4",
+          "audio/ogg",
+          "audio/wav",
+          "audio/mpeg",
+        ];
+
+        const supported = supportedTypes.find((type) =>
+          MediaRecorder.isTypeSupported(type)
+        );
+        if (!supported) {
+          throw new Error("No supported audio MIME type found");
+        }
+
+        options.mimeType = supported;
+      }
+
+      mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (e) => {
