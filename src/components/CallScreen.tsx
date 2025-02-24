@@ -388,7 +388,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   };
 
   const speakResponse = async (text: string) => {
-    // try {
     const { data, error } = await supabase.functions.invoke("handle-speech", {
       body: {
         text,
@@ -399,8 +398,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
     if (error) {
       console.log("Error in text to speech:", error);
-
-      // if (error.message?.includes("exceeds")) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
@@ -421,14 +418,10 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           console.log("utterance ended");
           startRecording();
           detectVolume();
-
           setIsSpeaking(false);
-
           resolve(null);
         };
       });
-      // }
-      // throw error;
     }
 
     if (data.audioContent) {
@@ -449,27 +442,21 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
-      // ✅ Ensure AudioContext is resumed (important for Safari/iOS)
-      if (audioContext && audioContext.state === "suspended") {
+      // Ensure AudioContext is resumed (important for Safari/iOS)
+      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
         console.log("Resuming audio context");
-
-        await audioContext.resume();
+        await audioContextRef.current.resume();
       }
       audio.muted = true; // Start muted
 
-      // Ensure AudioContext is resumed (important for Safari/iOS)
-
-      // Ensure audio plays only after user interaction (for autoplay policies)
-
-      if (!audioContext) {
+      if (!audioContextRef.current) {
         console.warn("AudioContext not available.");
       }
 
-      console.log("audio context,", audioContext);
+      console.log("audio context,", audioContextRef.current);
 
       const playAudio = () => {
-        audio
-          .play()
+        audio.play()
           .then(() => {
             audio.muted = false;
             console.log("Audio played");
@@ -481,7 +468,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (document.visibilityState === "visible") {
         console.log("document.visibilityState", document.visibilityState);
-
         playAudio();
       } else {
         document.addEventListener(
@@ -494,11 +480,11 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           { once: true }
         );
       }
+
       return new Promise((resolve) => {
         audio.onended = () => {
           URL.revokeObjectURL(audioUrl);
           console.log("Audio playback ended");
-
           startRecording();
           detectVolume();
           setIsSpeaking(false);
