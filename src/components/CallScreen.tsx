@@ -386,6 +386,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
+      audio.muted = true; // Start muted
 
       // Ensure AudioContext is resumed (important for Safari/iOS)
 
@@ -401,11 +402,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         audio
           .play()
           .then(() => {
+            audio.muted = false;
             console.log("Audio played");
-            setIsThinking(false);
-            setIsSpeaking(true);
           })
           .catch((err) => console.log("Playback error:", err));
+        setIsThinking(false);
+        setIsSpeaking(true);
       };
 
       if (document.visibilityState === "visible") {
