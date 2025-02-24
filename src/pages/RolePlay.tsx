@@ -27,10 +27,10 @@ const RolePlay = () => {
   const audioRef = useRef(null);
 
   useEffect(() => {
-    // if (!session) {
-    //   navigate("/dashboard");
-    //   return;
-    // }
+    if (!session) {
+      navigate("/dashboard");
+      return;
+    }
     loadMessages();
     // Update the document title when the component mounts
     document.title = "Role Play Session";
