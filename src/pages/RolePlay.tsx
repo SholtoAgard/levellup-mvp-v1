@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,10 +27,10 @@ const RolePlay = () => {
   const audioRef = useRef(null);
 
   useEffect(() => {
-    if (!session) {
-      navigate("/dashboard");
-      return;
-    }
+    // if (!session) {
+    //   navigate("/dashboard");
+    //   return;
+    // }
     loadMessages();
     // Update the document title when the component mounts
     document.title = "Role Play Session";
@@ -318,17 +317,14 @@ const RolePlay = () => {
                     src={
                       supabase.storage
                         .from("avatars")
-                        .getPublicUrl(`${session.avatar_id}.jpg`).data
-                        .publicUrl
+                        .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl
                     }
                   />
                 </Avatar>
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">
                   {session.avatar_id}
                 </h2>
-                <p className="text-sm text-gray-600">
-                  {session.roleplay_type}
-                </p>
+                <p className="text-sm text-gray-600">{session.roleplay_type}</p>
                 <Button
                   onClick={() => setShowCallScreen(true)}
                   className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
