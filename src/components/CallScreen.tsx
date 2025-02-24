@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,14 +6,15 @@ import { Phone, Mic, MicOff, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
-import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL } from '@ffmpeg/util';
 
 interface CallScreenProps {
   session: RoleplaySession;
 }
 
 let mediaRecorder: MediaRecorder;
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = new FFmpeg();
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
@@ -80,22 +80,21 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     };
   }, []);
 
-  // const convertToMp3 = async () => {
-  //   if (!file) return;
-  //   await ffmpeg.load();
-
-  //   ffmpeg.FS("writeFile", "input.mp4", await fetchFile(file));
-
-  //   await ffmpeg.run("-i", "input.mp4", "output.mp3");
-
-  //   const data = ffmpeg.FS("readFile", "output.mp3");
-  //   const url = URL.createObjectURL(
-  //     new Blob([data.buffer], { type: "audio/mp3" })
-  //   );
-  //   setConvertedFile(url);
-  // };
-
-  const ffmpeg = createFFmpeg({ log: true });
+  const loadFFmpeg = async () => {
+    if (!ffmpeg.loaded) {
+      try {
+        // Load FFmpeg
+        await ffmpeg.load({
+          coreURL: await toBlobURL(`/node_modules/@ffmpeg/core/dist/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`/node_modules/@ffmpeg/core/dist/ffmpeg-core.wasm`, 'application/wasm'),
+        });
+        console.log('FFmpeg loaded successfully');
+      } catch (error) {
+        console.error('Error loading FFmpeg:', error);
+      }
+    }
+    return ffmpeg;
+  };
 
   const processAudioData = async () => {
     console.log("inside processAudioData function");
@@ -121,36 +120,35 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       console.log("Processing audio blob of size:", audioBlob.size);
 
       if (mimeType === "audio/mp4") {
-        if (!ffmpeg.isLoaded()) {
-          await ffmpeg.load();
+        try {
+          const ffmpegInstance = await loadFFmpeg();
+          
+          // Convert Blob to ArrayBuffer
+          const arrayBuffer = await audioBlob.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          
+          // Write the input file
+          await ffmpegInstance.writeFile('input.mp4', uint8Array);
+
+          // Convert MP4 to MP3
+          await ffmpegInstance.exec([
+            '-i', 'input.mp4',
+            '-vn',
+            '-ar', '44100',
+            '-ac', '2',
+            '-b:a', '192k',
+            'output.mp3'
+          ]);
+
+          // Read the output file
+          const data = await ffmpegInstance.readFile('output.mp3');
+          const mp3Blob = new Blob([data], { type: 'audio/mp3' });
+
+          console.log("Converted MP3 Blob:", mp3Blob);
+          audioBlob = mp3Blob;
+        } catch (error) {
+          console.error('Error converting audio:', error);
         }
-
-        // Convert Blob to Uint8Array for FFmpeg
-        const audioData = await fetchFile(audioBlob);
-        ffmpeg.FS("writeFile", "input.mp4", audioData);
-
-        // Convert MP4 to MP3
-        await ffmpeg.run(
-          "-i",
-          "input.mp4",
-          "-vn",
-          "-ar",
-          "44100",
-          "-ac",
-          "2",
-          "-b:a",
-          "192k",
-          "output.mp3"
-        );
-
-        // Get the MP3 file
-        const mp3Data = ffmpeg.FS("readFile", "output.mp3");
-
-        // Create an MP3 Blob
-        const mp3Blob = new Blob([mp3Data.buffer], { type: "audio/mp3" });
-
-        console.log("Converted MP3 Blob:", mp3Blob);
-        audioBlob = mp3Blob;
       }
 
       const reader = new FileReader();
