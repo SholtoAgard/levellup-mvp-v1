@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Phone, Mic, MicOff, Award } from "lucide-react";
+import { Phone, Mic, MicOff, Award, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
@@ -75,9 +75,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     return () => {
       clearInterval(timer);
       clearTimeout(scoreButtonTimer);
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+
       if (silenceTimeoutRef.current) {
         clearTimeout(silenceTimeoutRef.current);
       }
@@ -160,7 +158,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     source.connect(analyserRef.current);
     analyserRef.current.fftSize = 256;
 
-    if (!isSafari) {
+    if (isSafari) {
       console.log("Safari detected, using SpeechRecognition");
       let transcript = "";
       const SpeechRecognition =
@@ -329,7 +327,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     if (!analyserRef.current) return;
     console.log("inside detect volume function...");
 
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    const dataArray = new Uint8Array(analyserRef?.current?.frequencyBinCount);
     let silenceCounter = 0;
     const minDb = -22;
     const speechThreshold = -13;
@@ -342,7 +340,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       )
         return;
 
-      analyserRef.current.getByteFrequencyData(dataArray);
+      analyserRef?.current?.getByteFrequencyData(dataArray);
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
       const db = 20 * Math.log10(average / 255);
 
@@ -646,6 +644,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     recognitionRef.current.stop();
 
     window?.speechSynthesis.cancel();
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        stream.getTracks().forEach((track) => track.stop());
+      })
+      .catch((err) => console.error("Error stopping media stream:", err));
     navigate(-1);
   };
 
@@ -665,7 +669,27 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         mediaRecorderRef.current = null;
       }
       window.speechSynthesis.cancel();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+      console.log("User data:", user);
+      if (authError) {
+        console.error("Error getting authenticated user:", authError);
+        throw authError;
+      }
 
+      // Get user profile data
+      const { data: userData, error: userError } = await supabase
+        // @ts-ignore
+        .from("users")
+        .select("full_name, avatar_url")
+        .eq("id", user?.id)
+        .single();
+
+      if (userError) {
+        console.error("Error fetching user data:", userError);
+      }
       // Get score and feedback from the roleplay endpoint
       const { data, error } = await supabase.functions.invoke(
         "handle-roleplay",
@@ -682,7 +706,57 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         }
       );
 
+      console.log("Data from get score:", data);
+
       if (error) throw error;
+
+      // Parse the response string to extract score and feedback
+      const responseText = data.response;
+
+      const scorePatterns = {
+        confidence: /Confidence:\s*(\d+)/,
+        clarity: /Clarity:\s*(\d+)/,
+        engagement: /Engagement:\s*(\d+)/,
+        objectionHandling: /Objection Handling:\s*(\d+)/,
+        valueProposition: /Value Proposition:\s*(\d+)/,
+        closingEffectiveness: /Closing Effectiveness:\s*(\d+)/,
+      };
+
+      // Extract scores using new patterns
+      const extractedScores = {
+        confidence: parseInt(
+          responseText.match(scorePatterns.confidence)?.[1] || "0"
+        ),
+        clarity: parseInt(
+          responseText.match(scorePatterns.clarity)?.[1] || "0"
+        ),
+        engagement: parseInt(
+          responseText.match(scorePatterns.engagement)?.[1] || "0"
+        ),
+        objectionHandling: parseInt(
+          responseText.match(scorePatterns.objectionHandling)?.[1] || "0"
+        ),
+        valueProposition: parseInt(
+          responseText.match(scorePatterns.valueProposition)?.[1] || "0"
+        ),
+        closingEffectiveness: parseInt(
+          responseText.match(scorePatterns.closingEffectiveness)?.[1] || "0"
+        ),
+      };
+
+      // Calculate average score (using all available scores)
+      const scores = Object.values(extractedScores).filter(
+        (score) => score > 0
+      );
+      const averageScore = Math.round(
+        scores.reduce((acc, curr) => acc + curr, 0) / scores.length
+      );
+      // Extract feedback (everything after the scores)
+      const feedbackText =
+        responseText
+          .split(/(?:Confidence|Clarity|Engagement):\s*\d+\/100/)
+          .pop()
+          ?.trim() || "";
 
       // Update session status in database
       const { error: updateError } = await supabase
@@ -691,16 +765,48 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         .eq("id", session.id);
 
       if (updateError) throw updateError;
-
-      // Navigate to feedback page
       navigate("/feedback", {
         state: {
           sessionId: session.id,
-          score: data.score,
-          feedback: data.feedback,
+          score: averageScore,
+          feedback: feedbackText,
+          detailedScores: {
+            confidence: extractedScores.confidence,
+            clarity: extractedScores.clarity,
+            engagement: extractedScores.engagement,
+            objectionHandling: extractedScores.objectionHandling,
+            valueProposition: extractedScores.valueProposition,
+            closingEffectiveness: extractedScores.closingEffectiveness,
+          },
+          // @ts-ignore
+          userName: userData?.full_name || user?.email?.split("@")[0] || "User",
+          // @ts-ignore
+          userImage:
+            // @ts-ignore
+            userData?.avatar_url || "",
         },
         replace: true,
       });
+      setEndVoiceCall(true);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0; // Reset audio position
+      }
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stream
+          .getTracks()
+          .forEach((track) => track.stop());
+        mediaRecorderRef.current = null;
+      } else {
+        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+      if (analyserRef.current) {
+        analyserRef.current = null;
+      }
+      window.speechSynthesis.cancel();
     } catch (error) {
       console.error("Error getting score:", error);
       toast({
@@ -783,16 +889,26 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       </div>
 
       <div className="p-8 flex justify-center gap-4">
-        {/* {showScoreButton && (
+        {showScoreButton && (
           <Button
             size="lg"
-            className="bg-green-600 hover:bg-green-700 text-white rounded-full w-16 h-16"
+            className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 py-3 flex items-center gap-2 h-15"
             onClick={handleGetScore}
             disabled={isLoading}
           >
-            <Award className="w-6 h-6" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <Award className="w-5 h-5" />
+                <span>Get Score</span>
+              </>
+            )}
           </Button>
-        )} */}
+        )}
         <Button
           variant="destructive"
           size="lg"
