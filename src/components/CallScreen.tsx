@@ -35,6 +35,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const processingAudioRef = useRef(false);
+  const ffmpegRef = useRef<any>(null);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -170,6 +171,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
   const startCall = async () => {
     try {
+      ffmpegRef.current = await loadFFmpeg();
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -190,7 +192,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       if (!isSupported) {
         mimeType = "audio/mp3";
         console.log("mp3 not supported");
-
         isSupported = MediaRecorder.isTypeSupported(mimeType);
       }
 
@@ -235,12 +236,22 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         );
 
         if (!isEndCallRef.current) {
-          console.log("Processing audio data testing...");
-          await processAudioData();
+          const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+          console.log("Processing audio data...");
+          try {
+            await processAudioData(audioBlob, mimeType, ffmpegRef.current);
 
-          if (!isSpeakingRef.current && !isThinkingRef.current) {
-            startRecording();
-            detectVolume();
+            if (!isSpeakingRef.current && !isThinkingRef.current) {
+              startRecording();
+              detectVolume();
+            }
+          } catch (error) {
+            console.error("Error processing audio:", error);
+            // Continue with recording even if processing fails
+            if (!isSpeakingRef.current && !isThinkingRef.current) {
+              startRecording();
+              detectVolume();
+            }
           }
         }
       };
