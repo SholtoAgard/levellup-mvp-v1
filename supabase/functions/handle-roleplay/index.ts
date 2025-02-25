@@ -1,109 +1,132 @@
-
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { Configuration, OpenAIApi } from 'https://esm.sh/openai@3.3.0';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface RoleplayRequest {
-  sessionId: string;
-  message?: string;
-  context?: {
-    avatar_id: string;
-    roleplay_type: string;
-    scenario_description: string;
-  };
-  requestScoring?: boolean;
+interface RoleplayContext {
+  avatar_id: string;
+  roleplay_type: string;
+  scenario_description: string;
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openAIApiKey) {
-      throw new Error("OpenAI API key not configured");
-    }
+    const { sessionId, message, requestScoring, context } = await req.json();
 
-    const { sessionId, message, context, requestScoring } =
-      (await req.json()) as RoleplayRequest;
+    // Initialize OpenAI
+    const configuration = new Configuration({
+      apiKey: Deno.env.get('OPENAI_API_KEY'),
+    });
+    const openai = new OpenAIApi(configuration);
 
-    // Create Supabase client
+    // Initialize Supabase client
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     if (requestScoring) {
-      // Fetch all messages for analysis
-      const { data: messages } = await supabaseClient
-        .from("roleplay_messages")
-        .select("*")
-        .eq("session_id", sessionId)
-        .order("created_at", { ascending: true });
+      // Fetch all messages from the session for analysis
+      const { data: messages, error: messagesError } = await supabaseClient
+        .from('roleplay_messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true });
 
-      const conversation = messages
-        ?.map((msg) => `${msg.role.toUpperCase()}: ${msg.content}`)
-        .join("\n");
+      if (messagesError) throw messagesError;
 
-      const systemPrompt = `You are an expert sales coach. Analyze this sales roleplay conversation and provide:
-1. Scores out of 100 for: Confidence, Clarity, Engagement, Objection Handling, Value Proposition, and Closing Effectiveness
-2. An overall score (average of all scores)
-3. Specific feedback on strengths and areas for improvement
-4. Format the response exactly like this:
-SCORE: [overall score]
-FEEDBACK: [detailed feedback]`;
+      // Prepare conversation history for analysis
+      const conversationHistory = messages.map(msg => 
+        `${msg.role.toUpperCase()}: ${msg.content}`
+      ).join('\n');
 
-      const response = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openAIApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: conversation },
-            ],
-            temperature: 0.7,
-          }),
-        }
-      );
+      // Generate the scoring prompt
+      const scoringPrompt = `
+        You are an expert sales coach analyzing a sales conversation. Below is a conversation between a salesperson and a potential customer.
+        
+        CONVERSATION:
+        ${conversationHistory}
+        
+        Based on this conversation, provide:
+        1. A score out of 100
+        2. 3-5 specific strengths demonstrated by the salesperson
+        3. 3-5 specific areas for improvement, including practical examples
+        
+        Focus on evaluating:
+        - Opening and rapport building
+        - Question quality and active listening
+        - Pain point identification
+        - Value proposition presentation
+        - Objection handling
+        - Call control and confidence
+        - Solution positioning
+        
+        Format your response exactly as follows:
+        SCORE: [number]
+        STRENGTHS:
+        - [strength 1]
+        - [strength 2]
+        - [strength 3]
+        IMPROVEMENTS:
+        - [improvement 1]
+        - [improvement 2]
+        - [improvement 3]
+      `;
 
-      const data = await response.json();
-      const aiResponse = data.choices[0].message.content;
+      const completion = await openai.createChatCompletion({
+        model: "gpt-4",
+        messages: [{
+          role: "system",
+          content: scoringPrompt
+        }],
+        temperature: 0.7,
+      });
 
-      // Update session with score and feedback
-      const scoreMatch = aiResponse.match(/SCORE:\s*(\d+)/);
-      const feedbackMatch = aiResponse.match(/FEEDBACK:([\s\S]+)/);
+      const response = completion.data.choices[0].message?.content;
+      console.log("AI Response:", response);
 
-      if (scoreMatch && feedbackMatch) {
-        const score = parseInt(scoreMatch[1]);
-        const feedback = feedbackMatch[1].trim();
-
-        await supabaseClient
-          .from("roleplay_sessions")
-          .update({
-            score,
-            feedback,
-            status: "completed",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", sessionId);
+      if (!response) {
+        throw new Error("Failed to generate feedback");
       }
 
-      return new Response(JSON.stringify({ response: aiResponse }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Parse the response
+      const scoreMatch = response.match(/SCORE:\s*(\d+)/);
+      const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+
+      // Extract strengths
+      const strengthsMatch = response.match(/STRENGTHS:\n((?:- .*\n?)*)/);
+      const strengths = strengthsMatch
+        ? strengthsMatch[1]
+            .split('\n')
+            .filter(line => line.startsWith('- '))
+            .map(line => line.substring(2).trim())
+        : [];
+
+      // Extract improvements
+      const improvementsMatch = response.match(/IMPROVEMENTS:\n((?:- .*\n?)*)/);
+      const improvements = improvementsMatch
+        ? improvementsMatch[1]
+            .split('\n')
+            .filter(line => line.startsWith('- '))
+            .map(line => line.substring(2).trim())
+        : [];
+
+      return new Response(
+        JSON.stringify({
+          score,
+          strengths,
+          improvements
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Handle regular message exchange
@@ -133,7 +156,7 @@ FEEDBACK: [detailed feedback]`;
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${openAIApiKey}`,
+        Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -166,10 +189,13 @@ FEEDBACK: [detailed feedback]`;
       }
     );
   } catch (error) {
-    console.error("Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error('Error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });
