@@ -63,8 +63,6 @@ const UserSurvey = () => {
                   I'm on a mission to build the #1 sales training platform in the world—but I can't do it without you. Your honest feedback is key to making LevellUp better for you and every sales rep who uses it. It'll only take 2-3 minutes, and your insights will help shape the future of LevellUp.
                   <br /><br />
                   Click the link below to share your feedback.
-                  <br /><br />
-                  Thank you for being part of this journey
                 </p>
                 <Button
                   className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white px-8 py-6 text-lg"
