@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, type, voiceId } = await req.json();
+    const { audio, text, type, voiceId, format = "audio/webm" } = await req.json();
 
     if (type === "text-to-speech") {
       if (!text || !voiceId) {
@@ -70,59 +70,53 @@ serve(async (req) => {
         throw new Error("No audio data provided");
       }
 
-      let mimeType = format;
-      let fileExtension = "mp3"; // Default to MP3
+      try {
+        // Process audio data with format
+        const audioData = new Uint8Array(
+          atob(audio)
+            .split("")
+            .map((char) => char.charCodeAt(0))
+        );
+        
+        const blob = new Blob([audioData], { type: format });
 
-      if (format === "audio/mp3" || format === "audio/mpeg") {
-        mimeType = "audio/mpeg";
-        fileExtension = "mp3";
-      } else if (format === "audio/wav") {
-        mimeType = "audio/wav";
-        fileExtension = "wav";
-      } else if (format === "audio/webm") {
-        mimeType = "audio/webm";
-        fileExtension = "webm";
-      } else {
-        throw new Error(`Unsupported format: ${format}`);
-      }
+        // Create form data for Whisper API
+        const formData = new FormData();
+        formData.append("file", blob, `audio.${format.split('/')[1]}`);
+        formData.append("model", "whisper-1");
+        formData.append("language", "en");
+        formData.append("response_format", "json");
 
-      console.log("Using audio format in the edge function:", mimeType);
+        const response = await fetch(
+          "https://api.openai.com/v1/audio/transcriptions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`,
+            },
+            body: formData,
+          }
+        );
 
-      // Process audio data with dynamic format
-      const audioData = new Uint8Array(
-        atob(audio)
-          .split("")
-          .map((char) => char.charCodeAt(0))
-      );
-      console.log("Using audio format:", format);
-      const blob = new Blob([audioData], { type: mimeType });
-
-      // Create form data for Whisper API
-      const formData = new FormData();
-      formData.append("file", blob, `audio.${fileExtension}`);
-      formData.append("model", "whisper-1");
-      formData.append("language", "en"); // Force English language
-      formData.append("response_format", "json");
-
-      const response = await fetch(
-        "https://api.openai.com/v1/audio/transcriptions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`,
-          },
-          body: formData,
+        if (!response.ok) {
+          throw new Error(`Whisper API error: ${await response.text()}`);
         }
-      );
 
-      if (!response.ok) {
-        throw new Error(`Whisper API error: ${await response.text()}`);
+        const data = await response.json();
+        return new Response(JSON.stringify({ text: data.text }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (error) {
+        console.error("Whisper API error:", error);
+        // Return an error that indicates we should use the fallback
+        return new Response(
+          JSON.stringify({ error: "USE_FALLBACK" }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
-
-      const data = await response.json();
-      return new Response(JSON.stringify({ text: data.text }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     throw new Error("Invalid type specified");

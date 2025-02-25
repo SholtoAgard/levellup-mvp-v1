@@ -13,6 +13,7 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import coreURL from "@ffmpeg/core?url";
 import wasmURL from "@ffmpeg/core/wasm?url";
+
 interface CallScreenProps {
   session: RoleplaySession;
 }
@@ -85,8 +86,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const ffmpeg = new FFmpeg();
 
   const processAudioData = async () => {
-    console.log("inside processAudioData function");
-
     if (chunksRef.current.length === 0 || processingAudioRef.current) return;
 
     processingAudioRef.current = true;
@@ -105,33 +104,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     console.log("audio blob size:", audioBlob.size);
 
     if (audioBlob.size > 0) {
-      console.log("Processing audio blob of size:", audioBlob.size);
-
-      await ffmpeg.load({ coreURL, wasmURL });
-
-      let finalBlob = audioBlob;
-      let finalMimeType = mimeType;
-
-      if (audioBlob.type === "audio/mp4") {
-        console.log("Converting audio/mp4 to mp3...");
-
-        const inputName = "input.mp4";
-        const outputName = "output.mp3";
-
-        ffmpeg.writeFile(inputName, await fetchFile(audioBlob));
-        await ffmpeg.exec("-i", inputName, "-b:a", "192k", outputName);
-
-        const data = ffmpeg.readFile(outputName);
-        finalBlob = new Blob([data.buffer], { type: "audio/mp3" });
-        finalMimeType = "audio/mp3";
-      }
-
       const reader = new FileReader();
-      reader.readAsDataURL(finalBlob);
+      reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
         const base64Audio = reader.result?.toString().split(",")[1];
         if (base64Audio) {
-          await handleSpeech(base64Audio, finalMimeType);
+          await handleSpeech(base64Audio, mimeType);
         }
       };
       chunksRef.current = [];
@@ -210,7 +188,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           console.log("Processing audio data testing...");
           await processAudioData();
 
-          // Start a new recording only if the latest ref values indicate we should
           if (!isSpeakingRef.current && !isThinkingRef.current) {
             startRecording();
             detectVolume();
@@ -249,15 +226,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
       const db = 20 * Math.log10(average / 255);
 
-      //   console.log("db: " + db);
-
-      // Check if audio is silent
-
       if (db > speechThreshold) {
         console.log("Speech detected");
-        // setIsListening(true);
-        // setIsThinking(false);
-        speechDetected = true; // Speech detected
+        speechDetected = true;
         silenceCounter = 0;
         isSilent = false;
       } else if (db < minDb) {
@@ -313,174 +284,154 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     }
   };
 
-  const handleSpeech = async (base64Audio: string, mimeType: string) => {
-    console.log("handle speech function called");
-    console.log("mimeType in handle speech function", mimeType);
-
+  const handleSpeech = async (base64Audio: string, format: string) => {
     try {
-      const { data: speechData, error: speechError } =
-        await supabase.functions.invoke("handle-speech", {
+      const { data: speechData, error: speechError } = await supabase.functions.invoke("handle-speech", {
+        body: {
+          audio: base64Audio,
+          format: format,
+          type: "speech-to-text",
+        },
+      });
+
+      if (speechError) {
+        if (speechError.message.includes("USE_FALLBACK")) {
+          const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+          recognition.lang = 'en-US';
+          
+          return new Promise((resolve, reject) => {
+            recognition.onresult = (event) => {
+              const transcript = event.results[0][0].transcript;
+              resolve({ text: transcript });
+            };
+            
+            recognition.onerror = (event) => {
+              reject(new Error(`Speech recognition error: ${event.error}`));
+            };
+            
+            recognition.start();
+          });
+        }
+        throw speechError;
+      }
+
+      if (speechData.text) {
+        const { data: roleplayData, error: roleplayError } = await supabase.functions.invoke("handle-roleplay", {
           body: {
-            audio: base64Audio,
-            format: mimeType,
-            type: "speech-to-text",
+            sessionId: session.id,
+            message: speechData.text,
+            context: session.status === "in_progress" ? {
+              avatar_id: session.avatar_id,
+              roleplay_type: session.roleplay_type,
+              scenario_description: session.scenario_description,
+            } : undefined,
           },
         });
-
-      if (speechError) throw speechError;
-      if (speechData.text) {
-        const { data: roleplayData, error: roleplayError } =
-          await supabase.functions.invoke("handle-roleplay", {
-            body: {
-              sessionId: session.id,
-              message: speechData.text,
-              context:
-                session.status === "in_progress"
-                  ? {
-                      avatar_id: session.avatar_id,
-                      roleplay_type: session.roleplay_type,
-                      scenario_description: session.scenario_description,
-                    }
-                  : undefined,
-            },
-          });
 
         if (roleplayError) throw roleplayError;
 
         if (roleplayData.response) {
           await speakResponse(roleplayData.response);
-
-          console.log("No error in speak response");
         }
-      } else {
-        setIsThinking(false);
-        startRecording();
-        detectVolume();
       }
     } catch (error) {
       console.error("Error in speech handling:", error);
-
       toast({
         title: "Error",
         description: "Failed to process speech. Please try again.",
         variant: "destructive",
       });
-      // startRecording(); // Restart recording even if there was an error
+      setIsThinking(false);
+      if (!isEndCallRef.current) {
+        startRecording();
+      }
     }
   };
 
   const speakResponse = async (text: string) => {
-    const { data, error } = await supabase.functions.invoke("handle-speech", {
-      body: {
-        text,
-        type: "text-to-speech",
-        voiceId: session.avatar_voice_id,
-      },
-    });
-
-    if (error) {
-      console.log("Error in text to speech:", error);
-
-      // if (error.message?.includes("exceeds")) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      setIsThinking(false);
-      setIsSpeaking(true);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-
-      toast({
-        title: "Notice",
-        description: "Using browser's text-to-speech as a fallback.",
-        duration: 3000,
+    try {
+      const { data, error } = await supabase.functions.invoke("handle-speech", {
+        body: {
+          text,
+          type: "text-to-speech",
+          voiceId: session.avatar_voice_id,
+        },
       });
 
-      return new Promise((resolve) => {
-        utterance.onend = () => {
-          console.log("utterance ended");
-          startRecording();
-          detectVolume();
+      if (error) {
+        console.error("Error in text to speech:", error);
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        setIsThinking(false);
+        setIsSpeaking(true);
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
 
-          setIsSpeaking(false);
-
-          resolve(null);
-        };
-      });
-      // }
-      // throw error;
-    }
-
-    if (data.audioContent) {
-      const binaryString = atob(data.audioContent);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      const audioBlob = new Blob([bytes], { type: "audio/mp3" });
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-
-      // ✅ Ensure AudioContext is resumed (important for Safari/iOS)
-      if (audioContext && audioContext.state === "suspended") {
-        console.log("Resuming audio context");
-
-        await audioContext.resume();
-      }
-      audio.muted = true; // Start muted
-
-      // Ensure AudioContext is resumed (important for Safari/iOS)
-
-      // Ensure audio plays only after user interaction (for autoplay policies)
-
-      if (!audioContext) {
-        console.warn("AudioContext not available.");
-      }
-
-      console.log("audio context,", audioContext);
-
-      const playAudio = () => {
-        audio
-          .play()
-          .then(() => {
-            audio.muted = false;
-            console.log("Audio played");
-            setIsThinking(false);
-            setIsSpeaking(true);
-          })
-          .catch((err) => console.log("Playback error:", err));
-      };
-
-      if (document.visibilityState === "visible") {
-        console.log("document.visibilityState", document.visibilityState);
-
-        playAudio();
-      } else {
-        document.addEventListener(
-          "visibilitychange",
-          () => {
-            if (document.visibilityState === "visible") {
-              playAudio();
+        return new Promise((resolve) => {
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            if (!isEndCallRef.current) {
+              startRecording();
             }
-          },
-          { once: true }
-        );
+            resolve(null);
+          };
+        });
       }
-      return new Promise((resolve) => {
-        audio.onended = () => {
-          cleanup();
-          resolve(null);
-        };
-      });
+
+      if (data?.audioContent) {
+        const binaryString = atob(data.audioContent);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const audioBlob = new Blob([bytes], { type: "audio/mp3" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        if (audioRef.current) {
+          audioRef.current.pause();
+          URL.revokeObjectURL(audioRef.current.src);
+          audioRef.current = null;
+        }
+
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+
+        setIsThinking(false);
+        setIsSpeaking(true);
+
+        return new Promise((resolve, reject) => {
+          audio.oncanplaythrough = () => {
+            audio.play().catch((error) => {
+              console.error("Audio playback error:", error);
+              reject(error);
+            });
+          };
+
+          audio.onended = () => {
+            setIsSpeaking(false);
+            URL.revokeObjectURL(audioUrl);
+            if (!isEndCallRef.current) {
+              startRecording();
+            }
+            resolve(null);
+          };
+
+          audio.onerror = (error) => {
+            console.error("Audio error:", error);
+            reject(error);
+          };
+        });
+      }
+    } catch (error) {
+      console.error("Error in speak response:", error);
+      setIsSpeaking(false);
+      if (!isEndCallRef.current) {
+        startRecording();
+      }
+      throw error;
     }
   };
 
@@ -488,7 +439,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     setEndVoiceCall(true);
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0; // Reset audio position
+      audioRef.current.currentTime = 0;
     }
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stream
@@ -512,7 +463,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     try {
       setIsLoading(true);
 
-      // End the call first
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -525,7 +475,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       }
       window.speechSynthesis.cancel();
 
-      // Get score and feedback from the roleplay endpoint
       const { data, error } = await supabase.functions.invoke(
         "handle-roleplay",
         {
@@ -543,7 +492,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (error) throw error;
 
-      // Update session status in database
       const { error: updateError } = await supabase
         .from("roleplay_sessions")
         .update({ status: "completed" })
@@ -551,7 +499,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (updateError) throw updateError;
 
-      // Navigate to feedback page
       navigate("/feedback", {
         state: {
           sessionId: session.id,
