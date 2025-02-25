@@ -116,14 +116,24 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         console.log("Converting audio/mp4 to webm...");
 
         const inputName = "input.mp4";
-        const outputName = "output.webm";
+        const outputName = "output.wav";
 
         ffmpeg.writeFile(inputName, await fetchFile(audioBlob));
-        await ffmpeg.exec("-i", inputName, "-c:a", "libopus", outputName);
+        await ffmpeg.exec(
+          "-i",
+          inputName,
+          "-ar",
+          "16000",
+          "-ac",
+          "1",
+          "-c:a",
+          "pcm_s16le",
+          outputName
+        );
 
         const data = ffmpeg.readFile(outputName);
-        finalBlob = new Blob([data.buffer], { type: "audio/webm" });
-        finalMimeType = "audio/webm";
+        finalBlob = new Blob([data.buffer], { type: "audio/wav" });
+        finalMimeType = "audio/wav";
       }
 
       const reader = new FileReader();
