@@ -437,10 +437,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       audioRef.current = audio;
       audio.playbackRate = 1.0;  // Ensure natural playback speed
 
-      // Ensure high-quality audio playback
+      // Use only the standard preservePitch property
       audio.preservesPitch = true;
-      audio.mozPreservesPitch = true;
-      audio.webkitPreservesPitch = true;
 
       return new Promise((resolve, reject) => {
         audio.oncanplaythrough = () => {
