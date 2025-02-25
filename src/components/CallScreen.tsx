@@ -521,8 +521,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const handleGetScore = async () => {
     try {
       setIsLoading(true);
+      setEndVoiceCall(true); // Mark call as ended
+      setIsThinking(false);
+      setIsSpeaking(false);
+      setIsListening(false);
 
-      // End the call first
+      // Stop all audio and recording
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -558,18 +562,21 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       // Update session status in database
       await supabase
         .from("roleplay_sessions")
-        .update({ 
+        .update({
           status: "completed",
-          score: data.score
+          score: data.score,
+          feedback: data.feedback
         })
         .eq("id", session.id);
 
-      // Navigate to call score page
+      // Navigate to call score page with all feedback data
       navigate("/call-score", {
         state: {
           avatarId: session.avatar_id,
           roleplayType: session.roleplay_type,
-          score: data.score || 0 // Ensure we have a default value
+          score: data.score || 0,
+          strengths: data.strengths || [],
+          improvements: data.improvements || [],
         }
       });
     } catch (error) {

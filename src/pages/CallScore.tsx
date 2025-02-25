@@ -5,17 +5,14 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Award, ThumbsUp, Target } from "lucide-react";
 
 const CallScore = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { avatarId, roleplayType, score } = location.state || {};
+  const { avatarId, roleplayType, score, strengths = [], improvements = [] } = location.state || {};
 
   console.log("Location state:", location.state);
-  console.log("Avatar ID:", avatarId);
-  console.log("Roleplay Type:", roleplayType);
-  console.log("Score:", score);
 
   if (!avatarId || !roleplayType || score === undefined) {
     console.log("Missing required data, redirecting to dashboard");
@@ -31,11 +28,9 @@ const CallScore = () => {
     .from("avatars")
     .getPublicUrl(`${avatarId}.jpg`).data.publicUrl;
 
-  console.log("Avatar URL:", avatarUrl);
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-6">
         <Button 
           variant="ghost" 
           onClick={() => navigate('/dashboard')}
@@ -70,6 +65,48 @@ const CallScore = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Understanding Your Score</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <ThumbsUp className="h-5 w-5 text-green-600" />
+                <h3 className="text-lg font-semibold">What You Did Well</h3>
+              </div>
+              <ul className="list-disc list-inside space-y-2 text-gray-700">
+                {strengths.map((strength: string, index: number) => (
+                  <li key={index}>{strength}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="h-5 w-5 text-blue-600" />
+                <h3 className="text-lg font-semibold">Areas for Improvement</h3>
+              </div>
+              <ul className="list-disc list-inside space-y-2 text-gray-700">
+                {improvements.map((improvement: string, index: number) => (
+                  <li key={index}>{improvement}</li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="text-center">
+          <Button 
+            onClick={() => navigate('/dashboard')}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8"
+            size="lg"
+          >
+            <Award className="mr-2 h-5 w-5" />
+            Start A New Role Play
+          </Button>
+        </div>
       </div>
     </div>
   );
