@@ -63,10 +63,10 @@ const CallScore = () => {
           <CardContent>
             <div className="text-center py-8">
               <h2 className="text-lg text-gray-600 mb-2">Call Score</h2>
-              <p className={`text-6xl font-bold ${getScoreColor(score)}`}>
+              <div className={`text-6xl font-bold ${getScoreColor(score)}`}>
                 {score}
-                <span className="text-2xl text-gray-400">/100</span>
-              </p>
+                <span className="text-2xl">/100</span>
+              </div>
             </div>
           </CardContent>
         </Card>
