@@ -553,22 +553,24 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (error) throw error;
 
-      // Update session status in database
-      const { error: updateError } = await supabase
-        .from("roleplay_sessions")
-        .update({ status: "completed" })
-        .eq("id", session.id);
+      console.log("Score data received:", data);
 
-      if (updateError) throw updateError;
+      // Update session status in database
+      await supabase
+        .from("roleplay_sessions")
+        .update({ 
+          status: "completed",
+          score: data.score
+        })
+        .eq("id", session.id);
 
       // Navigate to call score page
       navigate("/call-score", {
         state: {
           avatarId: session.avatar_id,
           roleplayType: session.roleplay_type,
-          score: data.score,
-        },
-        replace: true,
+          score: data.score || 0 // Ensure we have a default value
+        }
       });
     } catch (error) {
       console.error("Error getting score:", error);
