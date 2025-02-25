@@ -116,24 +116,14 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         console.log("Converting audio/mp4 to webm...");
 
         const inputName = "input.mp4";
-        const outputName = "output.wav";
+        const outputName = "output.mp3";
 
         ffmpeg.writeFile(inputName, await fetchFile(audioBlob));
-        await ffmpeg.exec(
-          "-i",
-          inputName,
-          "-ar",
-          "16000",
-          "-ac",
-          "1",
-          "-c:a",
-          "pcm_s16le",
-          outputName
-        );
+        await ffmpeg.exec("-i", inputName, "-b:a", "192k", outputName);
 
         const data = ffmpeg.readFile(outputName);
-        finalBlob = new Blob([data.buffer], { type: "audio/wav" });
-        finalMimeType = "audio/wav";
+        finalBlob = new Blob([data.buffer], { type: "audio/mp3" });
+        finalMimeType = "audio/mp3";
       }
 
       const reader = new FileReader();
@@ -325,6 +315,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
   const handleSpeech = async (base64Audio: string, mimeType: string) => {
     console.log("handle speech function called");
+    console.log("mimeType in handle speech function", mimeType);
 
     try {
       const { data: speechData, error: speechError } =
