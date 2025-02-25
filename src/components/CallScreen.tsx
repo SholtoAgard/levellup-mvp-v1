@@ -665,14 +665,17 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             <span className="text-sm font-medium text-gray-600">Get Your Score</span>
           </div>
         )}
-        <Button
-          variant="destructive"
-          size="lg"
-          className="rounded-full w-16 h-16"
-          onClick={endCall}
-        >
-          <Phone className="w-6 h-6 rotate-135" />
-        </Button>
+        <div className="flex flex-col items-center gap-2">
+          <Button
+            variant="destructive"
+            size="lg"
+            className="rounded-full w-16 h-16"
+            onClick={endCall}
+          >
+            <Phone className="w-6 h-6 rotate-135" />
+          </Button>
+          <span className="text-sm font-medium text-gray-600">End Call</span>
+        </div>
       </div>
     </div>
   );
