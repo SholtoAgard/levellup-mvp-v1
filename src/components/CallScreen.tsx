@@ -160,7 +160,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     source.connect(analyserRef.current);
     analyserRef.current.fftSize = 256;
 
-    if (isSafari) {
+    if (!isSafari) {
       console.log("Safari detected, using SpeechRecognition");
       let transcript = "";
       const SpeechRecognition =
@@ -542,6 +542,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             recognitionRef.current.start();
           }
 
+          speechDetected = false;
           detectVolume();
 
           setIsSpeaking(false);
@@ -611,6 +612,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           } else {
             recognitionRef.current.start();
           }
+          speechDetected = false;
           detectVolume();
 
           setIsSpeaking(false);
