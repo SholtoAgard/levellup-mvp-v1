@@ -17,7 +17,6 @@ interface CallScreenProps {
 
 let mediaRecorder: MediaRecorder;
 const ffmpeg = new FFmpeg();
-const ffmpeg = new FFmpeg();
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
@@ -367,7 +366,22 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   };
 
   const speakResponse = async (text: string) => {
-    try {
+    const { data, error } = await supabase.functions.invoke("handle-speech", {
+      body: {
+        text,
+        type: "text-to-speech",
+        voiceId: session.avatar_voice_id,
+      },
+    });
+
+    if (error) {
+      console.log("Error in text to speech:", error);
+
+      // if (error.message?.includes("exceeds")) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
       setIsThinking(false);
       setIsSpeaking(true);
       window.speechSynthesis.cancel();
