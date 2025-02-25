@@ -11,12 +11,13 @@ import { log } from "node:console";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
+import coreURL from "@ffmpeg/core?url";
+import wasmURL from "@ffmpeg/core/wasm?url";
 interface CallScreenProps {
   session: RoleplaySession;
 }
 
 let mediaRecorder: MediaRecorder;
-const ffmpeg = new FFmpeg();
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
@@ -81,6 +82,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     };
   }, []);
 
+  const ffmpeg = new FFmpeg();
+
   const processAudioData = async () => {
     console.log("inside processAudioData function");
 
@@ -104,7 +107,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     if (audioBlob.size > 0) {
       console.log("Processing audio blob of size:", audioBlob.size);
 
-      await ffmpeg.load();
+      await ffmpeg.load({ coreURL, wasmURL });
 
       let finalBlob = audioBlob;
       let finalMimeType = mimeType;
