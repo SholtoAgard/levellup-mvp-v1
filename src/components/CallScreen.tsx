@@ -392,16 +392,23 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       setIsThinking(false);
       setIsSpeaking(true);
 
+      const enhancedText = text
+        .replace(/([.!?])\s+/g, '$1\n\n')  // Add pauses after sentences
+        .replace(/,\s+/g, ',\n');  // Add slight pauses after commas
+
       const { data, error } = await supabase.functions.invoke("handle-speech", {
         body: {
-          text,
+          text: enhancedText,
           type: "text-to-speech",
           voiceId: session.avatar_voice_id,
           voiceSettings: {
-            stability: 0.35,
-            similarity_boost: 0.75,
-            style: 1,
-            use_speaker_boost: true
+            stability: 0.25,             // Lower stability for more natural variation
+            similarity_boost: 0.85,      // Higher similarity for consistent voice
+            style: 0.85,                 // High style transfer for natural expression
+            use_speaker_boost: true,     // Enhanced clarity
+            speaking_rate: 0.95,         // Slightly slower for more natural pacing
+            emotion: "neutral",          // Base emotion (will be modified by punctuation)
+            pause_duration: 0.4          // Natural pauses between sentences
           }
         },
       });
@@ -428,30 +435,48 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
+      audio.playbackRate = 1.0;  // Ensure natural playback speed
 
-      audio.oncanplaythrough = () => {
-        audio.play().catch((err) => {
-          console.error("Audio playback error:", err);
+      // Ensure high-quality audio playback
+      audio.preservesPitch = true;
+      audio.mozPreservesPitch = true;
+      audio.webkitPreservesPitch = true;
+
+      return new Promise((resolve, reject) => {
+        audio.oncanplaythrough = () => {
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+              console.error("Playback error:", error);
+              cleanup();
+              reject(error);
+            });
+          }
+        };
+
+        audio.onended = () => {
           cleanup();
-        });
-      };
+          resolve(null);
+        };
 
-      audio.onended = () => {
-        cleanup();
-      };
+        audio.onerror = (error) => {
+          console.error("Audio playback error:", error);
+          cleanup();
+          reject(error);
+        };
+      });
 
-      audio.onerror = () => {
-        console.error("Audio playback error");
-        cleanup();
-      };
-
-      const cleanup = () => {
+      function cleanup() {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
         URL.revokeObjectURL(audioUrl);
         setIsSpeaking(false);
         if (!isEndCallRef.current) {
           startRecording();
         }
-      };
+      }
 
     } catch (error) {
       console.error("Error in speaking response:", error);
