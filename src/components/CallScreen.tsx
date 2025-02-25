@@ -388,108 +388,81 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   };
 
   const speakResponse = async (text: string) => {
-    const { data, error } = await supabase.functions.invoke("handle-speech", {
-      body: {
-        text,
-        type: "text-to-speech",
-        voiceId: session.avatar_voice_id,
-      },
-    });
-
-    if (error) {
-      console.log("Error in text to speech:", error);
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
+    try {
       setIsThinking(false);
       setIsSpeaking(true);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
 
-      toast({
-        title: "Notice",
-        description: "Using browser's text-to-speech as a fallback.",
-        duration: 3000,
+      const { data, error } = await supabase.functions.invoke("handle-speech", {
+        body: {
+          text,
+          type: "text-to-speech",
+          voiceId: session.avatar_voice_id,
+          voiceSettings: {
+            stability: 0.35,
+            similarity_boost: 0.75,
+            style: 1,
+            use_speaker_boost: true
+          }
+        },
       });
 
-      return new Promise((resolve) => {
-        utterance.onend = () => {
-          console.log("utterance ended");
-          startRecording();
-          detectVolume();
-          setIsSpeaking(false);
-          resolve(null);
-        };
-      });
-    }
+      if (error) throw error;
 
-    if (data.audioContent) {
+      if (!data?.audioContent) {
+        throw new Error("No audio content received");
+      }
+
       const binaryString = atob(data.audioContent);
       const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < bytes.length; i++) {
+      for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
       const audioBlob = new Blob([bytes], { type: "audio/mp3" });
       const audioUrl = URL.createObjectURL(audioBlob);
+
       if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.src = ""; // Force cleanup
+        audioRef.current = null;
       }
 
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
-      // Ensure AudioContext is resumed (important for Safari/iOS)
-      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-        console.log("Resuming audio context");
-        await audioContextRef.current.resume();
-      }
-      audio.muted = true; // Start muted
-
-      if (!audioContextRef.current) {
-        console.warn("AudioContext not available.");
-      }
-
-      console.log("audio context,", audioContextRef.current);
-
-      const playAudio = () => {
-        audio.play()
-          .then(() => {
-            audio.muted = false;
-            console.log("Audio played");
-            setIsThinking(false);
-            setIsSpeaking(true);
-          })
-          .catch((err) => console.log("Playback error:", err));
+      audio.oncanplaythrough = () => {
+        audio.play().catch((err) => {
+          console.error("Audio playback error:", err);
+          cleanup();
+        });
       };
 
-      if (document.visibilityState === "visible") {
-        console.log("document.visibilityState", document.visibilityState);
-        playAudio();
-      } else {
-        document.addEventListener(
-          "visibilitychange",
-          () => {
-            if (document.visibilityState === "visible") {
-              playAudio();
-            }
-          },
-          { once: true }
-        );
-      }
+      audio.onended = () => {
+        cleanup();
+      };
 
-      return new Promise((resolve) => {
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          console.log("Audio playback ended");
+      audio.onerror = () => {
+        console.error("Audio playback error");
+        cleanup();
+      };
+
+      const cleanup = () => {
+        URL.revokeObjectURL(audioUrl);
+        setIsSpeaking(false);
+        if (!isEndCallRef.current) {
           startRecording();
-          detectVolume();
-          setIsSpeaking(false);
-          resolve(null);
-        };
+        }
+      };
+
+    } catch (error) {
+      console.error("Error in speaking response:", error);
+      setIsSpeaking(false);
+      if (!isEndCallRef.current) {
+        startRecording();
+      }
+      toast({
+        title: "Error",
+        description: "Failed to speak response. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -677,3 +650,5 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     </div>
   );
 };
+
+export default CallScreen;
