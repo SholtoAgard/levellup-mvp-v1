@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -7,23 +7,15 @@ import {
   SidebarGroupContent,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { Menu, ArrowLeft } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
 import Footer from "@/components/Footer";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 interface FeedbackSections {
   strengths: string[];
   areasToImprove: string[];
@@ -33,23 +25,26 @@ interface FeedbackSections {
   valueProposition: string;
   closingEffectiveness: string;
 }
+
 const Feedback = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showButton, setShowButton] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
-  const [chartData, setChartData] = useState([]);
 
   const sessionData = location.state || {};
-
-  console.log("sessionData", sessionData.userName);
   const score = parseInt(sessionData.score) || 0;
   const feedback = sessionData.feedback || "";
-  const detailedScores = sessionData.detailedScores || {
-    confidence: 0,
-    clarity: 0,
-    engagement: 0,
-  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowButton(true);
+    }, 30000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const parseFeedback = (feedbackText: string): FeedbackSections => {
     console.log("feedbackText", feedbackText);
     const sections: FeedbackSections = {
@@ -62,7 +57,6 @@ const Feedback = () => {
       closingEffectiveness: "N/A",
     };
 
-    // Handle the case with specific sections
     const lines = feedbackText.split("\n");
     lines.forEach((line) => {
       const trimmedLine = line.trim();
@@ -81,18 +75,14 @@ const Feedback = () => {
       }
     });
 
-    // Extract the main feedback part
     const feedbackPart =
       feedbackText.split("FEEDBACK:")[1]?.trim() || feedbackText;
     const paragraphs = feedbackPart.split("\n\n").filter((p) => p.trim());
 
-    // Set summary from first paragraph
     sections.summary = paragraphs[0]?.trim() || "";
 
-    // Process the rest of the text
     const remainingText = paragraphs.slice(1).join(" ");
 
-    // Extract strengths
     const strengthPatterns = [
       /(?:demonstrated|showed|exhibited|displayed|had|was|were)\s+(?:good|high|strong|effective|successful|excellent|polite)[^.!?]*[.!?]/gi,
       /(?:good|high|strong|effective|successful|excellent|polite)[^.!?]*[.!?]/gi,
@@ -107,7 +97,6 @@ const Feedback = () => {
       );
     });
 
-    // Extract areas to improve
     const improvementPatterns = [
       /Areas for improvement include[^.]*(?:[^.]*\.)/gi,
       /(?:need to|failed to|lack of|weak|improve|better|could have)[^.!?]*[.!?]/gi,
@@ -125,7 +114,6 @@ const Feedback = () => {
       );
     });
 
-    // Extract recommendations
     const recommendationPatterns = [
       /(?:should|could|needs? to|try to|work on|focus on)[^.!?]*[.!?]/gi,
     ];
@@ -139,12 +127,10 @@ const Feedback = () => {
       );
     });
 
-    // Remove duplicates
     sections.strengths = [...new Set(sections.strengths)];
     sections.areasToImprove = [...new Set(sections.areasToImprove)];
     sections.recommendations = [...new Set(sections.recommendations)];
 
-    // Add default strength if none found
     if (sections.strengths.length === 0) {
       sections.strengths.push(
         "Focus on the areas of improvement to enhance your performance."
@@ -156,32 +142,14 @@ const Feedback = () => {
 
   const feedbackSections = parseFeedback(feedback);
 
-  useEffect(() => {
-    const data = [
-      {
-        name: "Confidence",
-        value: detailedScores.confidence,
-      },
-      {
-        name: "Clarity",
-        value: detailedScores.clarity,
-      },
-      {
-        name: "Engagement",
-        value: detailedScores.engagement,
-      },
-      {
-        name: "Overall",
-        value: score,
-      },
-    ];
-    setChartData(data);
-  }, [score, detailedScores]);
-
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-600";
     if (score >= 60) return "text-yellow-600";
     return "text-red-600";
+  };
+
+  const getCallType = () => {
+    return sessionData.roleplay_type === "discovery_call" ? "Discovery Call" : "Cold Call";
   };
 
   return (
@@ -225,148 +193,92 @@ const Feedback = () => {
 
           <div className="p-4 sm:p-8 flex-1">
             <div className="max-w-4xl mx-auto space-y-6">
-              {/* <Button
-                variant="ghost"
-                className="mb-6"
-                onClick={() => navigate("/dashboard")}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-              </Button> */}
-              {/* <div className="mb-8 text-left flex flex-col">
-                <Avatar className="w-54 h-54 mb-4">
-                  <AvatarImage src={sessionData.userImage || ""} />
-                  <AvatarFallback className="bg-blue-500 text-white text-2xl">
-                    {sessionData.userName?.[0]?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {sessionData.userName || "User"}
-                </h2>
-                <p className="text-gray-600">
-                  {new Date().toLocaleDateString()}
-                </p>
-              </div> */}
-              <Card className="overflow-hidden">
+              <div className="text-center space-y-4">
+                <h2 className="text-2xl font-semibold">{getCallType()}</h2>
+                <h3 className="text-xl">{sessionData.avatarName || "AI Assistant"}</h3>
+                
+                <div className="flex justify-center">
+                  <Avatar className="w-32 h-32">
+                    <AvatarImage src={sessionData.avatarImage || ""} alt={sessionData.avatarName || "AI Assistant"} />
+                    <AvatarFallback className="text-4xl">
+                      {sessionData.avatarName?.[0]?.toUpperCase() || "A"}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+
+                <div className={`text-4xl font-bold ${getScoreColor(score)}`}>
+                  {score}/100
+                </div>
+              </div>
+
+              <Card>
                 <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <span className="text-lg sm:text-xl">
-                      Your Performance Score
-                    </span>
-                    <span
-                      className={`text-3xl sm:text-4xl ${getScoreColor(score)}`}
-                    >
-                      {score}/100
-                    </span>
-                  </CardTitle>
+                  <CardTitle>Understanding Your Score</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="relative w-full overflow-x-auto">
-                    <div className="min-w-[600px] h-[300px] mt-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="name"
-                            angle={-45}
-                            textAnchor="end"
-                            height={60}
-                            interval={0}
-                            tick={{ fontSize: 12 }}
-                          />
-                          <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                          <Tooltip />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke="#1E90FF"
-                            strokeWidth={2}
-                            dot={{ strokeWidth: 2, r: 4 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="mb-2">Key Strengths</h4>
+                      <ol className="list-decimal pl-5 space-y-2">
+                        {feedbackSections.strengths.map((strength, index) => (
+                          <li key={index} className="text-gray-700">
+                            {strength}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+
+                    <div>
+                      <h4 className="mb-2">Areas to Improve</h4>
+                      <ol className="list-decimal pl-5 space-y-2">
+                        {feedbackSections.areasToImprove.map((area, index) => (
+                          <li key={index} className="text-gray-700">
+                            {area}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+
+                    <div>
+                      <h4 className="mb-2">Recommendations</h4>
+                      <ol className="list-decimal pl-5 space-y-2">
+                        {feedbackSections.recommendations.map((rec, index) => (
+                          <li key={index} className="text-gray-700">
+                            {rec}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+
+                    <div>
+                      <h4 className="mb-2">Additional Metrics</h4>
+                      <div className="space-y-2">
+                        <p className="text-gray-700">
+                          Objection Handling: {feedbackSections.objectionHandling}
+                        </p>
+                        <p className="text-gray-700">
+                          Value Proposition: {feedbackSections.valueProposition}
+                        </p>
+                        <p className="text-gray-700">
+                          Closing Effectiveness: {feedbackSections.closingEffectiveness}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle>Detailed Feedback</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6">
-                  <div className="prose max-w-none space-y-4 sm:space-y-6 text-left">
-                    {feedbackSections.summary && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Summary
-                        </h3>
-                        <p className="text-gray-700">
-                          {feedbackSections.summary}
-                        </p>
-                      </div>
-                    )}
-
-                    {feedbackSections.strengths.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-green-700">
-                          Key Strengths
-                        </h3>
-                        <ul className="list-disc pl-6 space-y-1">
-                          {feedbackSections.strengths.map((strength, index) => (
-                            <li key={index} className="text-gray-700">
-                              {strength}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {feedbackSections.areasToImprove.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-amber-700">
-                          Areas to Improve
-                        </h3>
-                        <ul className="list-disc pl-6 space-y-1">
-                          {feedbackSections.areasToImprove.map(
-                            (area, index) => (
-                              <li key={index} className="text-gray-700">
-                                {area}
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    )}
-
-                    {feedbackSections.recommendations.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-blue-700">
-                          Recommendations
-                        </h3>
-                        <ul className="list-disc pl-6 space-y-1">
-                          {feedbackSections.recommendations.map(
-                            (rec, index) => (
-                              <li key={index} className="text-gray-700">
-                                {rec}
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="mt-6 sm:mt-8 text-center">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
-                  onClick={() => navigate("/dashboard")}
-                >
-                  Start New Practice
-                </Button>
-              </div>
+              {showButton && (
+                <div className="mt-6 sm:mt-8 text-center">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+                    onClick={() => navigate("/dashboard")}
+                  >
+                    Start New Practice
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           <Footer />
