@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -193,6 +194,17 @@ const Feedback = () => {
 
           <div className="p-4 sm:p-8 flex-1">
             <div className="max-w-4xl mx-auto space-y-6">
+              <div className="flex justify-center mb-6">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => navigate("/dashboard")}
+                  className="w-full sm:w-auto"
+                >
+                  Back to Dashboard
+                </Button>
+              </div>
+
               <div className="space-y-6 text-left">
                 <h2 className="text-2xl">
                   {getCallType()} -- {sessionData.avatarName || "AI Assistant"}
@@ -272,7 +284,7 @@ const Feedback = () => {
               </div>
 
               {showButton && (
-                <div className="text-left">
+                <div className="flex justify-center">
                   <Button
                     size="lg"
                     className="w-full sm:w-auto bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
