@@ -5,42 +5,42 @@ export const avatars = [
     name: "Chloe", 
     style: "VP of Sales", 
     personality: "Strategic leader owning sales organization and revenue targets for enterprise SaaS companies",
-    voiceId: "XB0fDUnXU5powFXDhCwa" // Charlotte - confident, professional female voice
+    voiceId: "XB0fDUnXU5powFXDhCwa" // Charlotte
   },
   { 
     id: "noah", 
     name: "Noah", 
     style: "Chief Revenue Officer", 
     personality: "Experienced CRO managing integrated sales, marketing, and customer success operations",
-    voiceId: "TX3LPaxmHKxFdv7VOQHJ" // Liam - authoritative male voice
+    voiceId: "bIHbv24MWmeRgasZH58o" // Will
   },
   { 
     id: "veronica", 
     name: "Veronica", 
     style: "Director of Sales Development", 
     personality: "Dynamic leader of SDR/BDR teams driving pipeline growth",
-    voiceId: "EXAVITQu4vr4xnSDxMaL" // Sarah - energetic, professional female voice
+    voiceId: "Xb7hH8MSUJpSbSDYk0k2" // Alice
   },
   { 
     id: "marcus", 
     name: "Marcus", 
     style: "Sales Operations Manager", 
     personality: "Expert in optimizing sales processes, CRM systems, and analytics",
-    voiceId: "cjVigY5qzO86Huf0OWal" // Eric - analytical male voice
+    voiceId: "iP95p4xoKVk53GoZ742B" // Chris
   },
   {
     id: "sophia",
     name: "Sophia",
     style: "VP of Marketing",
     personality: "Strategic marketing leader focused on lead generation and revenue marketing initiatives",
-    voiceId: "cgSgspJ2msm6clMCkdW9" // Jessica - professional female voice
+    voiceId: "cgSgspJ2msm6clMCkdW9" // Jessica
   },
   {
     id: "alex",
     name: "Alex",
     style: "Director of Customer Success",
     personality: "Customer success leader specializing in renewals and expansion revenue strategies",
-    voiceId: "onwK4e9ZLuTAKqWW03F9" // Daniel - warm, engaging male voice
+    voiceId: "onwK4e9ZLuTAKqWW03F9" // Daniel
   },
   {
     id: "maya",

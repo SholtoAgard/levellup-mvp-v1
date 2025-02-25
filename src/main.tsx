@@ -15,7 +15,6 @@ import ThankYou from './pages/ThankYou.tsx';
 import Feedback from './pages/Feedback.tsx';
 import Refer from './pages/Refer.tsx';
 import UserSurvey from './pages/UserSurvey.tsx';
-import CallScore from './pages/CallScore.tsx';
 import './index.css';
 
 const router = createBrowserRouter([
@@ -75,10 +74,6 @@ const router = createBrowserRouter([
       {
         path: "user-survey",
         element: <UserSurvey />,
-      },
-      {
-        path: "call-score",
-        element: <CallScore />,
       }
     ],
   },

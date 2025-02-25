@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarProvider } from "@/components/ui/sidebar";
-import { Menu } from "lucide-react";
+import { Menu, ArrowLeft } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
@@ -87,6 +87,14 @@ const Feedback = () => {
 
           <div className="p-8 flex-1">
             <div className="max-w-4xl mx-auto">
+              <Button
+                variant="ghost"
+                className="mb-6"
+                onClick={() => navigate('/dashboard')}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+              </Button>
+
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
