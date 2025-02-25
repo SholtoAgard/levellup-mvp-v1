@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -14,25 +13,40 @@ serve(async (req) => {
   }
 
   try {
-    const { audio, type, text, voiceId, format = "audio/webm" } = await req.json();
+    const { audio, type, text, voiceId, format } = await req.json();
 
     if (type === "speech-to-text") {
       if (!audio) {
         throw new Error("No audio data provided");
       }
 
+      let mimeType = format;
+      let fileExtension = "mp3"; // Default to MP3
+
+      if (format === "audio/mp3" || format === "audio/mpeg") {
+        mimeType = "audio/mpeg";
+        fileExtension = "mp3";
+      } else if (format === "audio/wav") {
+        mimeType = "audio/wav";
+        fileExtension = "wav";
+      } else if (format === "audio/webm") {
+        mimeType = "audio/webm";
+        fileExtension = "webm";
+      } else {
+        throw new Error(`Unsupported format: ${format}`);
+      }
+
+      console.log("Using audio format in the edge function:", mimeType);
+
       // Process audio data with dynamic format
-      const audioData = new Uint8Array(
-        atob(audio)
-          .split("")
-          .map((char) => char.charCodeAt(0))
-      );
+      const audioData = Uint8Array.from(atob(audio), (c) => c.charCodeAt(0));
+
       console.log("Using audio format:", format);
-      const blob = new Blob([audioData], { type: format });
+      const blob = new Blob([audioData], { type: mimeType });
 
       // Create form data for Whisper API
       const formData = new FormData();
-      formData.append("file", blob, `audio.${format.split('/')[1]}`);
+      formData.append("file", blob, `audio.${fileExtension}`);
       formData.append("model", "whisper-1");
       formData.append("language", "en"); // Force English language
       formData.append("response_format", "json");
