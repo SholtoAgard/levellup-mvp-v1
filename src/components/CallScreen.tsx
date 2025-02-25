@@ -70,7 +70,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         title: "Score Available",
         description: "You can now get feedback on your conversation!",
       });
-    }, 60000); // 60 seconds = 1 minute
+    }, 30000); // 30 seconds = 1 minute
 
     return () => {
       clearInterval(timer);
@@ -906,7 +906,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             ) : (
               <>
                 <Award className="w-5 h-5" />
-                <span>Get Score</span>
+                <span>Get Your Score</span>
               </>
             )}
           </Button>

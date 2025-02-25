@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -150,7 +149,9 @@ const Feedback = () => {
   };
 
   const getCallType = () => {
-    return sessionData.roleplay_type === "discovery_call" ? "Discovery Call" : "Cold Call";
+    return sessionData.roleplay_type === "discovery_call"
+      ? "Discovery Call"
+      : "Cold Call";
   };
 
   return (
@@ -206,28 +207,33 @@ const Feedback = () => {
               </div>
 
               <div className="space-y-6 text-left">
-                <h2 className="text-2xl">
-                  {getCallType()} -- {sessionData.avatarName || "AI Assistant"}
+                {/* <h2 className="text-2xl">
+                  {getCallType()} - {sessionData.avatarName || "AI Assistant"}
                 </h2>
-                
+
                 <div className="w-32 h-32 overflow-hidden">
-                  <img 
-                    src={sessionData.avatarImage || ""} 
+                  <img
+                    src={sessionData.avatarImage || ""}
                     alt={sessionData.avatarName || "AI Assistant"}
                     className="w-full h-full object-cover"
                   />
-                </div>
-
+                </div> */}
+                <h2 className="text-2xl">Overall Call Score:</h2>
                 <div className={`text-4xl font-bold ${getScoreColor(score)}`}>
                   {score}/100
                 </div>
 
-                <h3 className="text-lg font-medium">Understanding Your Score</h3>
-                
+                <h3 className="text-lg font-small">Understanding Your Score</h3>
+
                 <Card>
                   <CardContent className="p-4 sm:p-6">
                     <div className="grid grid-cols-1 gap-6">
                       {/* Strengths Section */}
+                      <div>
+                        <h4 className="text-left mb-2">
+                          What you did well in this call
+                        </h4>
+                      </div>
                       <div>
                         <h4 className="text-left mb-2">Key Strengths</h4>
                         <ol className="list-decimal pl-5 space-y-2">
@@ -243,11 +249,16 @@ const Feedback = () => {
                       <div>
                         <h4 className="text-left mb-2">Areas to Improve</h4>
                         <ol className="list-decimal pl-5 space-y-2">
-                          {feedbackSections.areasToImprove.map((area, index) => (
-                            <li key={index} className="text-gray-700 text-left">
-                              {area}
-                            </li>
-                          ))}
+                          {feedbackSections.areasToImprove.map(
+                            (area, index) => (
+                              <li
+                                key={index}
+                                className="text-gray-700 text-left"
+                              >
+                                {area}
+                              </li>
+                            )
+                          )}
                         </ol>
                       </div>
 
@@ -255,29 +266,37 @@ const Feedback = () => {
                       <div>
                         <h4 className="text-left mb-2">Recommendations</h4>
                         <ol className="list-decimal pl-5 space-y-2">
-                          {feedbackSections.recommendations.map((rec, index) => (
-                            <li key={index} className="text-gray-700 text-left">
-                              {rec}
-                            </li>
-                          ))}
+                          {feedbackSections.recommendations.map(
+                            (rec, index) => (
+                              <li
+                                key={index}
+                                className="text-gray-700 text-left"
+                              >
+                                {rec}
+                              </li>
+                            )
+                          )}
                         </ol>
                       </div>
 
-                      {/* Additional Metrics Section */}
+                      {/* Additional Metrics Section
                       <div>
                         <h4 className="text-left mb-2">Additional Metrics</h4>
                         <div className="space-y-2">
                           <p className="text-gray-700 text-left">
-                            Objection Handling: {feedbackSections.objectionHandling}
+                            Objection Handling:{" "}
+                            {feedbackSections.objectionHandling}
                           </p>
                           <p className="text-gray-700 text-left">
-                            Value Proposition: {feedbackSections.valueProposition}
+                            Value Proposition:{" "}
+                            {feedbackSections.valueProposition}
                           </p>
                           <p className="text-gray-700 text-left">
-                            Closing Effectiveness: {feedbackSections.closingEffectiveness}
+                            Closing Effectiveness:{" "}
+                            {feedbackSections.closingEffectiveness}
                           </p>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </CardContent>
                 </Card>
