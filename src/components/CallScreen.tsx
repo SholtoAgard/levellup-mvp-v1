@@ -561,12 +561,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (updateError) throw updateError;
 
-      // Navigate to feedback page
-      navigate("/feedback", {
+      // Navigate to call score page
+      navigate("/call-score", {
         state: {
-          sessionId: session.id,
+          avatarId: session.avatar_id,
+          roleplayType: session.roleplay_type,
           score: data.score,
-          feedback: data.feedback,
         },
         replace: true,
       });
