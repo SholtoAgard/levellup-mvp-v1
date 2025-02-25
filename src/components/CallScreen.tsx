@@ -1,43 +1,43 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Phone, Mic, MicOff, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RoleplaySession } from "@/lib/types";
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { loadFFmpeg, processAudioData } from "@/utils/audioHandling";
+import { AvatarDisplay } from "./roleplay/AvatarDisplay";
+import { CallControls } from "./roleplay/CallControls";
+import { ScoringLoader } from "./roleplay/ScoringLoader";
 
 interface CallScreenProps {
   session: RoleplaySession;
 }
 
 let mediaRecorder: MediaRecorder;
-const ffmpeg = new FFmpeg();
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
+  const [endVoiceCall, setEndVoiceCall] = useState(false);
+  const [showScoreButton, setShowScoreButton] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGettingScore, setIsGettingScore] = useState(false);
+
   const isSpeakingRef = useRef(isSpeaking);
   const isThinkingRef = useRef(isThinking);
   const isListeningRef = useRef(isListening);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [callDuration, setCallDuration] = useState(0);
-  const [endVoiceCall, setEndVoiceCall] = useState(false);
   const isEndCallRef = useRef(endVoiceCall);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const processingAudioRef = useRef(false);
-  const [showScoreButton, setShowScoreButton] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGettingScore, setIsGettingScore] = useState(false);
+
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
@@ -66,7 +66,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         title: "Score Available",
         description: "You can now get feedback on your conversation!",
       });
-    }, 60000); // 60 seconds = 1 minute
+    }, 60000);
 
     return () => {
       clearInterval(timer);
@@ -80,84 +80,92 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     };
   }, []);
 
-  const loadFFmpeg = async () => {
-    if (!ffmpeg.loaded) {
-      try {
-        await ffmpeg.load({
-          coreURL: await toBlobURL('/node_modules/@ffmpeg/core/dist/ffmpeg-core.js', 'text/javascript'),
-          wasmURL: await toBlobURL('/node_modules/@ffmpeg/core/dist/ffmpeg-core.wasm', 'application/wasm'),
-        });
-        console.log('FFmpeg loaded successfully');
-      } catch (error) {
-        console.error('Error loading FFmpeg:', error);
+  const handleGetScore = async () => {
+    try {
+      setIsGettingScore(true);
+      setIsLoading(true);
+      setEndVoiceCall(true);
+      setIsThinking(false);
+      setIsSpeaking(false);
+      setIsListening(false);
+
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       }
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stream
+          .getTracks()
+          .forEach((track) => track.stop());
+        mediaRecorderRef.current = null;
+      }
+      window.speechSynthesis.cancel();
+
+      const { data, error } = await supabase.functions.invoke("handle-roleplay", {
+        body: {
+          sessionId: session.id,
+          requestScoring: true,
+          context: {
+            avatar_id: session.avatar_id,
+            roleplay_type: session.roleplay_type,
+            scenario_description: session.scenario_description,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      await supabase
+        .from("roleplay_sessions")
+        .update({
+          status: "completed",
+          score: data.score,
+          feedback: data.feedback
+        })
+        .eq("id", session.id);
+
+      navigate("/call-score", {
+        state: {
+          avatarId: session.avatar_id,
+          roleplayType: session.roleplay_type,
+          score: data.score || 0,
+          strengths: data.strengths || [],
+          improvements: data.improvements || [],
+        }
+      });
+    } catch (error) {
+      console.error("Error getting score:", error);
+      toast({
+        title: "Error",
+        description: "Failed to get conversation score. Please try again.",
+        variant: "destructive",
+      });
+      setIsGettingScore(false);
+    } finally {
+      setIsLoading(false);
     }
-    return ffmpeg;
   };
 
-  const processAudioData = async () => {
-    console.log("inside processAudioData function");
-
-    if (chunksRef.current.length === 0 || processingAudioRef.current) return;
-
-    processingAudioRef.current = true;
-    let mimeType = mediaRecorderRef.current?.mimeType || "audio/webm";
-    console.log("mediaRecorder:", mediaRecorderRef.current);
-
-    console.log("MIME Type before blob", mimeType);
-    if (mimeType === "audio/webm;codecs=opus") {
-      mimeType = "audio/webm";
+  const endCall = () => {
+    setEndVoiceCall(true);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
-
-    let audioBlob = new Blob(chunksRef.current, { type: mimeType });
-    console.log("Recorded MIME Type:", audioBlob.type);
-    mediaRecorderRef.current = null;
-
-    chunksRef.current = [];
-
-    if (audioBlob.size > 0) {
-      console.log("Processing audio blob of size:", audioBlob.size);
-
-      if (mimeType === "audio/mp4") {
-        try {
-          const ffmpegInstance = await loadFFmpeg();
-          
-          // Convert Blob to ArrayBuffer
-          const audioData = await fetchFile(audioBlob);
-          await ffmpegInstance.writeFile('input.mp4', audioData);
-
-          // Convert MP4 to MP3
-          await ffmpegInstance.exec([
-            '-i', 'input.mp4',
-            '-vn',
-            '-ar', '44100',
-            '-ac', '2',
-            '-b:a', '192k',
-            'output.mp3'
-          ]);
-
-          // Read the output file
-          const data = await ffmpegInstance.readFile('output.mp3');
-          const mp3Blob = new Blob([data], { type: 'audio/mp3' });
-
-          console.log("Converted MP3 Blob:", mp3Blob);
-          audioBlob = mp3Blob;
-        } catch (error) {
-          console.error('Error converting audio:', error);
-        }
-      }
-
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(",")[1];
-        if (base64Audio) {
-          await handleSpeech(base64Audio, mimeType);
-        }
-      };
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
+      mediaRecorderRef.current = null;
     }
-
-    processingAudioRef.current = false;
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    if (analyserRef.current) {
+      analyserRef.current = null;
+    }
+    window.speechSynthesis.cancel();
+    navigate(-1);
   };
 
   const startCall = async () => {
@@ -230,7 +238,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           console.log("Processing audio data testing...");
           await processAudioData();
 
-          // Start a new recording only if the latest ref values indicate we should
           if (!isSpeakingRef.current && !isThinkingRef.current) {
             startRecording();
             detectVolume();
@@ -269,15 +276,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
       const db = 20 * Math.log10(average / 255);
 
-      //   console.log("db: " + db);
-
-      // Check if audio is silent
-
       if (db > speechThreshold) {
         console.log("Speech detected");
-        // setIsListening(true);
-        // setIsThinking(false);
-        speechDetected = true; // Speech detected
+        speechDetected = true;
         silenceCounter = 0;
         isSilent = false;
       } else if (db < minDb) {
@@ -384,7 +385,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         description: "Failed to process speech. Please try again.",
         variant: "destructive",
       });
-      // startRecording(); // Restart recording even if there was an error
     }
   };
 
@@ -443,13 +443,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
-      // Ensure AudioContext is resumed (important for Safari/iOS)
-      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-        console.log("Resuming audio context");
-        await audioContextRef.current.resume();
-      }
-      audio.muted = true; // Start muted
-
       if (!audioContextRef.current) {
         console.warn("AudioContext not available.");
       }
@@ -495,105 +488,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     }
   };
 
-  const endCall = () => {
-    setEndVoiceCall(true);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0; // Reset audio position
-    }
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stream
-        .getTracks()
-        .forEach((track) => track.stop());
-      mediaRecorderRef.current = null;
-    } else {
-      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-    }
-    if (analyserRef.current) {
-      analyserRef.current = null;
-    }
-    window.speechSynthesis.cancel();
-    navigate(-1);
-  };
-
-  const handleGetScore = async () => {
-    try {
-      setIsGettingScore(true);
-      setIsLoading(true);
-      setEndVoiceCall(true); // Mark call as ended
-      setIsThinking(false);
-      setIsSpeaking(false);
-      setIsListening(false);
-
-      // Stop all audio and recording immediately
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stream
-          .getTracks()
-          .forEach((track) => track.stop());
-        mediaRecorderRef.current = null;
-      }
-      window.speechSynthesis.cancel();
-
-      // Get score and feedback from the roleplay endpoint
-      const { data, error } = await supabase.functions.invoke(
-        "handle-roleplay",
-        {
-          body: {
-            sessionId: session.id,
-            requestScoring: true,
-            context: {
-              avatar_id: session.avatar_id,
-              roleplay_type: session.roleplay_type,
-              scenario_description: session.scenario_description,
-            },
-          },
-        }
-      );
-
-      if (error) throw error;
-
-      console.log("Score data received:", data);
-
-      // Update session status in database
-      await supabase
-        .from("roleplay_sessions")
-        .update({
-          status: "completed",
-          score: data.score,
-          feedback: data.feedback
-        })
-        .eq("id", session.id);
-
-      // Navigate to call score page with all feedback data
-      navigate("/call-score", {
-        state: {
-          avatarId: session.avatar_id,
-          roleplayType: session.roleplay_type,
-          score: data.score || 0,
-          strengths: data.strengths || [],
-          improvements: data.improvements || [],
-        }
-      });
-    } catch (error) {
-      console.error("Error getting score:", error);
-      toast({
-        title: "Error",
-        description: "Failed to get conversation score. Please try again.",
-        variant: "destructive",
-      });
-      setIsGettingScore(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -604,15 +498,17 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="p-4 flex items-center justify-between bg-white shadow-sm">
         <div className="flex items-center gap-2">
-          <Avatar className="w-10 h-10">
-            <AvatarImage
+          <div className="w-10 h-10 rounded-full overflow-hidden">
+            <img
               src={
                 supabase.storage
                   .from("avatars")
                   .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl
               }
+              alt={session.avatar_id}
+              className="w-full h-full object-cover"
             />
-          </Avatar>
+          </div>
           <span className="font-semibold">{session.avatar_id}</span>
         </div>
         <div className="flex items-center gap-4">
@@ -622,79 +518,23 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         {isGettingScore ? (
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-lg font-medium text-gray-700">Analyzing your conversation...</p>
-            <p className="text-sm text-gray-500">This may take a few moments</p>
-          </div>
+          <ScoringLoader />
         ) : (
-          <>
-            <div className="relative">
-              {isThinking && (
-                <div className="absolute -inset-3 rounded-full">
-                  <div className="w-full h-full rounded-full border-8 border-orange-500 border-t-transparent animate-spin" />
-                </div>
-              )}
-              <div className="w-48 h-48 rounded-full relative">
-                <Avatar className="w-full h-full">
-                  <AvatarImage
-                    src={
-                      supabase.storage
-                        .from("avatars")
-                        .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl
-                    }
-                  />
-                </Avatar>
-              </div>
-            </div>
-
-            <h2 className="text-2xl font-bold mt-6">{session.avatar_id}</h2>
-            {isListening && (
-              <div className="mt-4 px-4 py-2 bg-purple-100 text-purple-600 rounded-full animate-pulse">
-                Listening...
-              </div>
-            )}
-            {isThinking && (
-              <div className="mt-4 px-4 py-2 bg-orange-100 text-orange-600 rounded-full animate-pulse">
-                Thinking...
-              </div>
-            )}
-            {isSpeaking && (
-              <div className="mt-4 px-4 py-2 bg-green-100 text-green-600 rounded-full animate-pulse">
-                Talking...
-              </div>
-            )}
-          </>
+          <AvatarDisplay
+            avatarId={session.avatar_id}
+            isThinking={isThinking}
+            status={{ isListening, isThinking, isSpeaking }}
+          />
         )}
       </div>
 
-      <div className="p-8 flex justify-center gap-4">
-        {showScoreButton && !isGettingScore && (
-          <div className="flex flex-col items-center gap-2">
-            <Button
-              size="lg"
-              className="bg-green-600 hover:bg-green-700 text-white rounded-full w-16 h-16"
-              onClick={handleGetScore}
-              disabled={isLoading || isGettingScore}
-            >
-              <Award className="h-6 w-6" />
-            </Button>
-            <span className="text-sm font-medium text-gray-600">Get Your Score</span>
-          </div>
-        )}
-        <div className="flex flex-col items-center gap-2">
-          <Button
-            variant="destructive"
-            size="lg"
-            className="rounded-full w-16 h-16"
-            onClick={endCall}
-            disabled={isGettingScore}
-          >
-            <Phone className="w-6 h-6 rotate-135" />
-          </Button>
-          <span className="text-sm font-medium text-gray-600">End Call</span>
-        </div>
-      </div>
+      <CallControls
+        showScoreButton={showScoreButton}
+        isGettingScore={isGettingScore}
+        isLoading={isLoading}
+        onGetScore={handleGetScore}
+        onEndCall={endCall}
+      />
     </div>
   );
 };
