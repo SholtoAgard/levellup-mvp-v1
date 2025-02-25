@@ -12,7 +12,13 @@ const CallScore = () => {
   const navigate = useNavigate();
   const { avatarId, roleplayType, score } = location.state || {};
 
+  console.log("Location state:", location.state);
+  console.log("Avatar ID:", avatarId);
+  console.log("Roleplay Type:", roleplayType);
+  console.log("Score:", score);
+
   if (!avatarId || !roleplayType || score === undefined) {
+    console.log("Missing required data, redirecting to dashboard");
     navigate('/dashboard');
     return null;
   }
@@ -20,6 +26,12 @@ const CallScore = () => {
   const getScoreColor = (score: number) => {
     return score >= 70 ? "text-green-600" : "text-red-600";
   };
+
+  const avatarUrl = supabase.storage
+    .from("avatars")
+    .getPublicUrl(`${avatarId}.jpg`).data.publicUrl;
+
+  console.log("Avatar URL:", avatarUrl);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
@@ -38,11 +50,7 @@ const CallScore = () => {
             <div className="flex items-center gap-4">
               <Avatar className="w-16 h-16">
                 <AvatarImage
-                  src={
-                    supabase.storage
-                      .from("avatars")
-                      .getPublicUrl(`${avatarId}.jpg`).data.publicUrl
-                  }
+                  src={avatarUrl}
                   alt={avatarId}
                 />
               </Avatar>
