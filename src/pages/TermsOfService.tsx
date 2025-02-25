@@ -1,10 +1,20 @@
 
 import React from "react";
 import Footer from "@/components/Footer";
+import { Link } from "react-router-dom";
+import { ZapIcon } from "lucide-react";
 
 const TermsOfService = () => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <div className="border-b">
+        <div className="container mx-auto px-4 py-4">
+          <Link to="/" className="flex items-center gap-2 w-fit">
+            <ZapIcon className="h-6 w-6" />
+            <span className="text-2xl font-bold text-black">LEVELLUP</span>
+          </Link>
+        </div>
+      </div>
       <main className="flex-1 container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-3xl font-bold mb-8">LevellUp Terms of Service</h1>
         <p className="text-gray-600 mb-8">Last Updated: February 18, 2025</p>

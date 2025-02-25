@@ -17,6 +17,7 @@ interface CallScreenProps {
 
 let mediaRecorder: MediaRecorder;
 const ffmpeg = new FFmpeg();
+const ffmpeg = new FFmpeg();
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
@@ -25,8 +26,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const isSpeakingRef = useRef(isSpeaking);
   const isThinkingRef = useRef(isThinking);
   const isListeningRef = useRef(isListening);
-  const audioRef = useRef(null);
-  const audioContext = useAudioContext();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [callDuration, setCallDuration] = useState(0);
   const [endVoiceCall, setEndVoiceCall] = useState(false);
   const isEndCallRef = useRef(endVoiceCall);
@@ -96,7 +96,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       mimeType = "audio/webm";
     }
 
-    const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+    let audioBlob = new Blob(chunksRef.current, { type: mimeType });
     console.log("Recorded MIME Type:", audioBlob.type);
     mediaRecorderRef.current = null;
 
@@ -165,12 +165,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       }
 
       if (!isSupported) {
-        mimeType = "audio/wav";
+        mimeType = "audio/mp4";
         isSupported = MediaRecorder.isTypeSupported(mimeType);
       }
 
       if (!isSupported) {
-        mimeType = "audio/mp4";
+        mimeType = "audio/wav";
         isSupported = MediaRecorder.isTypeSupported(mimeType);
       }
 
@@ -367,23 +367,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   };
 
   const speakResponse = async (text: string) => {
-    // try {
-    const { data, error } = await supabase.functions.invoke("handle-speech", {
-      body: {
-        text,
-        type: "text-to-speech",
-        voiceId: session.avatar_voice_id,
-      },
-    });
-
-    if (error) {
-      console.log("Error in text to speech:", error);
-
-      // if (error.message?.includes("exceeds")) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
+    try {
       setIsThinking(false);
       setIsSpeaking(true);
       window.speechSynthesis.cancel();
@@ -413,16 +397,16 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     if (data.audioContent) {
       const binaryString = atob(data.audioContent);
       const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < bytes.length; i++) {
+      for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
       const audioBlob = new Blob([bytes], { type: "audio/mp3" });
       const audioUrl = URL.createObjectURL(audioBlob);
+
       if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.src = ""; // Force cleanup
+        audioRef.current = null;
       }
 
       const audio = new Audio(audioUrl);
@@ -475,12 +459,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       }
       return new Promise((resolve) => {
         audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          console.log("Audio playback ended");
-
-          startRecording();
-          detectVolume();
-          setIsSpeaking(false);
+          cleanup();
           resolve(null);
         };
       });
@@ -667,3 +646,5 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     </div>
   );
 };
+
+export default CallScreen;

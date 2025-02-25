@@ -14,6 +14,7 @@ import TermsOfService from './pages/TermsOfService.tsx';
 import ThankYou from './pages/ThankYou.tsx';
 import Feedback from './pages/Feedback.tsx';
 import Refer from './pages/Refer.tsx';
+import UserSurvey from './pages/UserSurvey.tsx';
 import './index.css';
 
 const router = createBrowserRouter([
@@ -69,6 +70,10 @@ const router = createBrowserRouter([
       {
         path: "refer",
         element: <Refer />,
+      },
+      {
+        path: "user-survey",
+        element: <UserSurvey />,
       }
     ],
   },
