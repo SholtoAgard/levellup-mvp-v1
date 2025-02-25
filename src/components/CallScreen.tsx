@@ -653,14 +653,17 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       <div className="p-8 flex justify-center gap-4">
         {showScoreButton && (
-          <Button
-            size="lg"
-            className="bg-green-600 hover:bg-green-700 text-white rounded-full w-16 h-16"
-            onClick={handleGetScore}
-            disabled={isLoading}
-          >
-            <Award className="w-6 h-6" />
-          </Button>
+          <div className="flex flex-col items-center gap-2">
+            <Button
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-white rounded-full w-16 h-16"
+              onClick={handleGetScore}
+              disabled={isLoading}
+            >
+              <Award className="w-6 h-6" />
+            </Button>
+            <span className="text-sm font-medium text-gray-600">Get Your Score</span>
+          </div>
         )}
         <Button
           variant="destructive"
