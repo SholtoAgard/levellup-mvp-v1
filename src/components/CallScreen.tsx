@@ -641,17 +641,23 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     if (analyserRef?.current) {
       analyserRef.current = null;
     }
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+    if (recognitionRef?.current) {
+      recognitionRef.current.abort(); // Ensures full stop
+      recognitionRef.current.onend = null; // Remove any event listeners
+      recognitionRef.current = null;
     }
 
     window?.speechSynthesis.cancel();
+
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then((stream) => {
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach((track) => {
+          track.stop();
+        });
       })
       .catch((err) => console.error("Error stopping media stream:", err));
+
     navigate(-1);
   };
 
