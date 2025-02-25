@@ -13,7 +13,6 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import coreURL from "@ffmpeg/core?url";
 import wasmURL from "@ffmpeg/core/wasm?url";
-
 interface CallScreenProps {
   session: RoleplaySession;
 }
@@ -41,6 +40,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const processingAudioRef = useRef(false);
   const [showScoreButton, setShowScoreButton] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const recognitionRef = useRef(null);
+  const recognitionFlagRef = useRef(null);
 
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
@@ -86,6 +87,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const ffmpeg = new FFmpeg();
 
   const processAudioData = async () => {
+    console.log("inside processAudioData function");
+
     if (chunksRef.current.length === 0 || processingAudioRef.current) return;
 
     processingAudioRef.current = true;
@@ -104,12 +107,33 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     console.log("audio blob size:", audioBlob.size);
 
     if (audioBlob.size > 0) {
+      console.log("Processing audio blob of size:", audioBlob.size);
+
+      await ffmpeg.load({ coreURL, wasmURL });
+
+      let finalBlob = audioBlob;
+      let finalMimeType = mimeType;
+
+      if (audioBlob.type === "audio/mp4") {
+        console.log("Converting audio/mp4 to mp3...");
+
+        const inputName = "input.mp4";
+        const outputName = "output.mp3";
+
+        ffmpeg.writeFile(inputName, await fetchFile(audioBlob));
+        await ffmpeg.exec("-i", inputName, "-b:a", "192k", outputName);
+
+        const data = ffmpeg.readFile(outputName);
+        finalBlob = new Blob([data.buffer], { type: "audio/mp3" });
+        finalMimeType = "audio/mp3";
+      }
+
       const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
+      reader.readAsDataURL(finalBlob);
       reader.onloadend = async () => {
         const base64Audio = reader.result?.toString().split(",")[1];
         if (base64Audio) {
-          await handleSpeech(base64Audio, mimeType);
+          await handleSpeech(base64Audio, finalMimeType);
         }
       };
       chunksRef.current = [];
@@ -119,99 +143,191 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   };
 
   const startCall = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current);
-      analyserRef.current.fftSize = 256;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
 
-      let mimeType = "audio/webm";
-      let isSupported = MediaRecorder.isTypeSupported(mimeType);
+    // Create AudioContext and AnalyserNode
+    audioContextRef.current = new AudioContext();
+    analyserRef.current = audioContextRef.current.createAnalyser();
+    const source = audioContextRef.current.createMediaStreamSource(stream);
+    source.connect(analyserRef.current);
+    analyserRef.current.fftSize = 256;
 
-      if (!isSupported) {
-        mimeType = "audio/mp3";
-        console.log("mp3 not supported");
-
-        isSupported = MediaRecorder.isTypeSupported(mimeType);
+    if (isSafari) {
+      console.log("Safari detected, using SpeechRecognition");
+      let transcript = "";
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        throw new Error("Speech Recognition not supported in this browser.");
       }
 
-      if (!isSupported) {
-        mimeType = "audio/mp4";
-        isSupported = MediaRecorder.isTypeSupported(mimeType);
-      }
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = "en-US";
 
-      if (!isSupported) {
-        mimeType = "audio/wav";
-        isSupported = MediaRecorder.isTypeSupported(mimeType);
-      }
+      recognitionRef.current.onstart = () => {
+        console.log("Speech recognition started");
+        setIsListening(true);
+        recognitionFlagRef.current = "recording";
 
-      if (!isSupported) {
-        throw new Error("No supported audio MIME type found");
-      }
-
-      console.log("Using MIME type:", mimeType);
-
-      mediaRecorder = new MediaRecorder(stream, {
-        mimeType,
-        audioBitsPerSecond: 128000,
-      });
-
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (e) => {
-        console.log("Data available: ", e.data.size);
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
+        detectVolume();
       };
 
-      mediaRecorder.onstop = async () => {
-        console.log("endVoiceCallRef", isEndCallRef);
+      recognitionRef.current.onresult = (event) => {
+        transcript = Array.from(event.results)
+          .map((result) => result[0].transcript)
+          .join("");
 
-        console.log(
-          "MediaRecorder stopped, isSpeaking:",
-          isSpeakingRef.current,
-          "isThinking:",
-          isThinkingRef.current
-        );
+        console.log("Speech recognized:", transcript);
+
+        // Handle transcript processing here
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+      };
+
+      recognitionRef.current.onstop = async () => {
+        console.log("Speech recognition stopped");
+        setIsListening(false);
+        recognitionFlagRef.current = "stopped";
+        if (!isEndCallRef.current) {
+          console.log("Processing audio data testing...");
+          await handleRolePlay(transcript);
+
+          // Start a new recording only if the latest ref values indicate we should
+          if (!isSpeakingRef.current && !isThinkingRef.current) {
+            recognitionRef.current.start();
+            detectVolume();
+          }
+        }
+      };
+      recognitionRef.current.onend = async () => {
+        console.log("Speech recognition ended");
+        setIsListening(false);
+        recognitionFlagRef.current = "ended";
 
         if (!isEndCallRef.current) {
           console.log("Processing audio data testing...");
-          await processAudioData();
+          await handleRolePlay(transcript);
 
+          // Start a new recording only if the latest ref values indicate we should
           if (!isSpeakingRef.current && !isThinkingRef.current) {
-            startRecording();
+            recognitionRef.current.start();
             detectVolume();
           }
         }
       };
 
-      startRecording();
-      detectVolume();
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      toast({
-        title: "Error",
-        description:
-          "Failed to access microphone. Please make sure you have granted microphone permissions.",
-        variant: "destructive",
-      });
+      recognitionRef.current.start();
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+
+        audioContextRef.current = new AudioContext();
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        source.connect(analyserRef.current);
+        analyserRef.current.fftSize = 256;
+
+        let mimeType = "audio/webm";
+        let isSupported = MediaRecorder.isTypeSupported(mimeType);
+
+        if (!isSupported) {
+          mimeType = "audio/mp3";
+          console.log("mp3 not supported");
+
+          isSupported = MediaRecorder.isTypeSupported(mimeType);
+        }
+
+        if (!isSupported) {
+          mimeType = "audio/mp4";
+          isSupported = MediaRecorder.isTypeSupported(mimeType);
+        }
+
+        if (!isSupported) {
+          mimeType = "audio/wav";
+          isSupported = MediaRecorder.isTypeSupported(mimeType);
+        }
+
+        if (!isSupported) {
+          throw new Error("No supported audio MIME type found");
+        }
+
+        console.log("Using MIME type:", mimeType);
+
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType,
+          audioBitsPerSecond: 128000,
+        });
+
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (e) => {
+          console.log("Data available: ", e.data.size);
+          if (e.data.size > 0) {
+            chunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          console.log("endVoiceCallRef", isEndCallRef);
+
+          console.log(
+            "MediaRecorder stopped, isSpeaking:",
+            isSpeakingRef.current,
+            "isThinking:",
+            isThinkingRef.current
+          );
+
+          if (!isEndCallRef.current) {
+            console.log("Processing audio data testing...");
+            await processAudioData();
+
+            // Start a new recording only if the latest ref values indicate we should
+            if (!isSpeakingRef.current && !isThinkingRef.current) {
+              startRecording();
+              detectVolume();
+            }
+          }
+        };
+
+        startRecording();
+        detectVolume();
+      } catch (error) {
+        console.error("Error accessing microphone:", error);
+        toast({
+          title: "Error",
+          description:
+            "Failed to access microphone. Please make sure you have granted microphone permissions.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   let speechDetected = false;
 
   const detectVolume = () => {
+    console.log("analyser ref curent:", analyserRef.current);
+
     if (!analyserRef.current) return;
+    console.log("inside detect volume function...");
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     let silenceCounter = 0;
@@ -220,31 +336,49 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     let isSilent = false;
 
     const checkVolume = () => {
-      if (!analyserRef.current || !mediaRecorderRef.current) return;
+      if (
+        (!analyserRef.current || !mediaRecorderRef.current) &&
+        !recognitionRef.current
+      )
+        return;
 
       analyserRef.current.getByteFrequencyData(dataArray);
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
       const db = 20 * Math.log10(average / 255);
 
+      //   console.log("db: " + db);
+
+      // Check if audio is silent
+
       if (db > speechThreshold) {
         console.log("Speech detected");
-        speechDetected = true;
+        console.log("recognitionRef?.current", recognitionRef?.current);
+
+        // setIsListening(true);
+        // setIsThinking(false);
+        speechDetected = true; // Speech detected
         silenceCounter = 0;
         isSilent = false;
       } else if (db < minDb) {
         silenceCounter++;
         if (
-          silenceCounter > 300 &&
+          silenceCounter > 250 &&
           !isSilent &&
           speechDetected &&
-          mediaRecorderRef.current.state === "recording"
+          (mediaRecorderRef?.current?.state === "recording" ||
+            recognitionFlagRef?.current === "recording")
         ) {
           if (!isThinkingRef.current && !isSpeakingRef.current) {
             console.log("Silence detected, stopping recording");
             setIsListening(false);
             setIsThinking(true);
             isSilent = true;
-            mediaRecorderRef.current.stop();
+            if (mediaRecorderRef?.current) {
+              mediaRecorderRef.current.stop();
+            } else {
+              recognitionRef?.current.stop();
+            }
+
             silenceCounter = 0;
             speechDetected = false;
           }
@@ -284,178 +418,232 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     }
   };
 
-  const handleSpeech = async (base64Audio: string, format: string) => {
+  const handleSpeech = async (base64Audio: string, mimeType: string) => {
+    console.log("handle speech function called");
+    console.log("mimeType in handle speech function", mimeType);
+
     try {
-      const { data: speechData, error: speechError } = await supabase.functions.invoke("handle-speech", {
-        body: {
-          audio: base64Audio,
-          format: format,
-          type: "speech-to-text",
-        },
-      });
-
-      if (speechError) {
-        if (speechError.message.includes("USE_FALLBACK")) {
-          const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-          recognition.lang = 'en-US';
-          
-          return new Promise((resolve, reject) => {
-            recognition.onresult = (event) => {
-              const transcript = event.results[0][0].transcript;
-              resolve({ text: transcript });
-            };
-            
-            recognition.onerror = (event) => {
-              reject(new Error(`Speech recognition error: ${event.error}`));
-            };
-            
-            recognition.start();
-          });
-        }
-        throw speechError;
-      }
-
-      if (speechData.text) {
-        const { data: roleplayData, error: roleplayError } = await supabase.functions.invoke("handle-roleplay", {
+      const { data: speechData, error: speechError } =
+        await supabase.functions.invoke("handle-speech", {
           body: {
-            sessionId: session.id,
-            message: speechData.text,
-            context: session.status === "in_progress" ? {
-              avatar_id: session.avatar_id,
-              roleplay_type: session.roleplay_type,
-              scenario_description: session.scenario_description,
-            } : undefined,
+            audio: base64Audio,
+            format: mimeType,
+            type: "speech-to-text",
           },
         });
+
+      if (speechError) throw speechError;
+      if (speechData.text) {
+        const { data: roleplayData, error: roleplayError } =
+          await supabase.functions.invoke("handle-roleplay", {
+            body: {
+              sessionId: session.id,
+              message: speechData.text,
+              context:
+                session.status === "in_progress"
+                  ? {
+                      avatar_id: session.avatar_id,
+                      roleplay_type: session.roleplay_type,
+                      scenario_description: session.scenario_description,
+                    }
+                  : undefined,
+            },
+          });
 
         if (roleplayError) throw roleplayError;
 
         if (roleplayData.response) {
           await speakResponse(roleplayData.response);
+
+          console.log("No error in speak response");
         }
+      } else {
+        setIsThinking(false);
+        startRecording();
+        detectVolume();
       }
     } catch (error) {
       console.error("Error in speech handling:", error);
+
       toast({
         title: "Error",
         description: "Failed to process speech. Please try again.",
         variant: "destructive",
       });
-      setIsThinking(false);
-      if (!isEndCallRef.current) {
-        startRecording();
+      // startRecording(); // Restart recording even if there was an error
+    }
+  };
+
+  const handleRolePlay = async (transcript) => {
+    try {
+      setIsThinking(true);
+      const { data: roleplayData, error: roleplayError } =
+        await supabase.functions.invoke("handle-roleplay", {
+          body: {
+            sessionId: session.id,
+            message: transcript,
+            context:
+              session.status === "in_progress"
+                ? {
+                    avatar_id: session.avatar_id,
+                    roleplay_type: session.roleplay_type,
+                    scenario_description: session.scenario_description,
+                  }
+                : undefined,
+          },
+        });
+
+      if (roleplayError) throw roleplayError;
+
+      if (roleplayData.response) {
+        await speakResponse(roleplayData.response);
+
+        console.log("No error in speak response");
       }
+    } catch (error) {
+      console.log("Error in roleplay handling:", error);
     }
   };
 
   const speakResponse = async (text: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("handle-speech", {
-        body: {
-          text,
-          type: "text-to-speech",
-          voiceId: session.avatar_voice_id,
-        },
+    const { data, error } = await supabase.functions.invoke("handle-speech", {
+      body: {
+        text,
+        type: "text-to-speech",
+        voiceId: session.avatar_voice_id,
+      },
+    });
+
+    if (error) {
+      console.log("Error in text to speech:", error);
+
+      // if (error.message?.includes("exceeds")) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      setIsThinking(false);
+      setIsSpeaking(true);
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+
+      toast({
+        title: "Notice",
+        description: "Using browser's text-to-speech as a fallback.",
+        duration: 3000,
       });
 
-      if (error) {
-        console.error("Error in text to speech:", error);
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        setIsThinking(false);
-        setIsSpeaking(true);
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
+      return new Promise((resolve) => {
+        utterance.onend = () => {
+          console.log("utterance ended");
+          if (!recognitionRef?.current) {
+            startRecording();
+          } else {
+            recognitionRef.current.start();
+          }
 
-        return new Promise((resolve) => {
-          utterance.onend = () => {
-            setIsSpeaking(false);
-            if (!isEndCallRef.current) {
-              startRecording();
-            }
-            resolve(null);
-          };
-        });
+          detectVolume();
+
+          setIsSpeaking(false);
+
+          resolve(null);
+        };
+      });
+      // }
+      // throw error;
+    }
+
+    if (data.audioContent) {
+      const binaryString = atob(data.audioContent);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
 
-      if (data?.audioContent) {
-        const binaryString = atob(data.audioContent);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
+      const audioBlob = new Blob([bytes], { type: "audio/mp3" });
+      const audioUrl = URL.createObjectURL(audioBlob);
 
-        const audioBlob = new Blob([bytes], { type: "audio/mp3" });
-        const audioUrl = URL.createObjectURL(audioBlob);
+      // if (audioRef.current) {
+      //   audioRef.current.pause();
+      //   audioRef.current = null;
+      // }
 
-        if (audioRef.current) {
-          audioRef.current.pause();
-          URL.revokeObjectURL(audioRef.current.src);
-          audioRef.current = null;
-        }
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
 
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
+      // ✅ Ensure AudioContext is resumed (important for Safari/iOS)
+      // if (audioContext && audioContext?.state === "suspended") {
+      //   console.log("Resuming audio context");
 
-        setIsThinking(false);
-        setIsSpeaking(true);
+      //   await audioContext.resume();
+      // }
+      audio.muted = true; // Start muted
 
-        return new Promise((resolve, reject) => {
-          audio.oncanplaythrough = () => {
-            audio.play().catch((error) => {
-              console.error("Audio playback error:", error);
-              reject(error);
-            });
-          };
+      // Ensure AudioContext is resumed (important for Safari/iOS)
 
-          audio.onended = () => {
-            setIsSpeaking(false);
-            URL.revokeObjectURL(audioUrl);
-            if (!isEndCallRef.current) {
-              startRecording();
-            }
-            resolve(null);
-          };
+      // Ensure audio plays only after user interaction (for autoplay policies)
 
-          audio.onerror = (error) => {
-            console.error("Audio error:", error);
-            reject(error);
-          };
-        });
-      }
-    } catch (error) {
-      console.error("Error in speak response:", error);
-      setIsSpeaking(false);
-      if (!isEndCallRef.current) {
-        startRecording();
-      }
-      throw error;
+      // if (!audioContext) {
+      //   console.warn("AudioContext not available.");
+      // }
+
+      // console.log("audio context,", audioContext);
+
+      const playAudio = () => {
+        console.log("in the play audio function");
+
+        audio
+          .play()
+          .then(() => {
+            audio.muted = false;
+            console.log("Audio played");
+            setIsThinking(false);
+            setIsSpeaking(true);
+          })
+          .catch((err) => console.log("Playback error:", err));
+      };
+
+      playAudio();
+      return new Promise((resolve) => {
+        audio.onended = () => {
+          if (!recognitionRef?.current) {
+            startRecording();
+          } else {
+            recognitionRef.current.start();
+          }
+          detectVolume();
+
+          setIsSpeaking(false);
+
+          resolve(null);
+        };
+      });
     }
   };
 
   const endCall = () => {
     setEndVoiceCall(true);
-    if (audioRef.current) {
+    if (audioRef?.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.currentTime = 0; // Reset audio position
     }
-    if (mediaRecorderRef.current) {
+    if (mediaRecorderRef?.current) {
       mediaRecorderRef.current.stream
         .getTracks()
         .forEach((track) => track.stop());
       mediaRecorderRef.current = null;
-    } else {
+    } else if (mediaRecorder) {
       mediaRecorder.stream.getTracks().forEach((track) => track.stop());
     }
-    if (audioContextRef.current) {
+    if (audioContextRef?.current) {
       audioContextRef.current.close();
     }
-    if (analyserRef.current) {
+    if (analyserRef?.current) {
       analyserRef.current = null;
     }
-    window.speechSynthesis.cancel();
+    recognitionRef.current.stop();
+
+    window?.speechSynthesis.cancel();
     navigate(-1);
   };
 
@@ -463,6 +651,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     try {
       setIsLoading(true);
 
+      // End the call first
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -475,6 +664,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       }
       window.speechSynthesis.cancel();
 
+      // Get score and feedback from the roleplay endpoint
       const { data, error } = await supabase.functions.invoke(
         "handle-roleplay",
         {
@@ -492,6 +682,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (error) throw error;
 
+      // Update session status in database
       const { error: updateError } = await supabase
         .from("roleplay_sessions")
         .update({ status: "completed" })
@@ -499,6 +690,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (updateError) throw updateError;
 
+      // Navigate to feedback page
       navigate("/feedback", {
         state: {
           sessionId: session.id,
