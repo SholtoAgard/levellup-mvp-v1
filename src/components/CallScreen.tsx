@@ -190,12 +190,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       let isSupported = MediaRecorder.isTypeSupported(mimeType);
 
       if (!isSupported) {
-        mimeType = "audio/mp3";
-        console.log("mp3 not supported");
-        isSupported = MediaRecorder.isTypeSupported(mimeType);
-      }
-
-      if (!isSupported) {
         mimeType = "audio/mp4";
         isSupported = MediaRecorder.isTypeSupported(mimeType);
       }
@@ -219,39 +213,33 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (e) => {
-        console.log("Data available: ", e.data.size);
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
-        console.log("endVoiceCallRef", isEndCallRef);
-
-        console.log(
-          "MediaRecorder stopped, isSpeaking:",
-          isSpeakingRef.current,
-          "isThinking:",
-          isThinkingRef.current
-        );
-
-        if (!isEndCallRef.current) {
+        if (!isEndCallRef.current && chunksRef.current.length > 0) {
           const audioBlob = new Blob(chunksRef.current, { type: mimeType });
-          console.log("Processing audio data...");
+          chunksRef.current = []; // Clear chunks for next recording
+          
           try {
-            await processAudioData(audioBlob, mimeType, ffmpegRef.current);
-
-            if (!isSpeakingRef.current && !isThinkingRef.current) {
-              startRecording();
-              detectVolume();
-            }
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const base64Audio = reader.result?.toString().split(',')[1];
+              if (base64Audio) {
+                await handleSpeech(base64Audio, mimeType);
+              }
+            };
+            reader.readAsDataURL(audioBlob);
           } catch (error) {
             console.error("Error processing audio:", error);
-            // Continue with recording even if processing fails
-            if (!isSpeakingRef.current && !isThinkingRef.current) {
-              startRecording();
-              detectVolume();
-            }
+            setIsThinking(false);
+            startRecording();
+          }
+        } else {
+          if (!isSpeakingRef.current && !isThinkingRef.current) {
+            startRecording();
           }
         }
       };
@@ -262,8 +250,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       console.error("Error accessing microphone:", error);
       toast({
         title: "Error",
-        description:
-          "Failed to access microphone. Please make sure you have granted microphone permissions.",
+        description: "Failed to access microphone. Please check permissions.",
         variant: "destructive",
       });
     }
@@ -338,72 +325,61 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       console.error("Error starting recording:", error);
       toast({
         title: "Error",
-        description:
-          "Failed to start recording. Please try refreshing the page.",
+        description: "Failed to start recording. Please try refreshing the page.",
         variant: "destructive",
       });
     }
   };
 
   const handleSpeech = async (base64Audio: string, mimeType: string) => {
-    console.log("handle speech function called");
     setIsThinking(true);
-
     try {
-      const { data: speechData, error: speechError } =
-        await supabase.functions.invoke("handle-speech", {
-          body: {
-            audio: base64Audio,
-            format: mimeType,
-            type: "speech-to-text",
-          },
-        });
+      const { data: speechData, error: speechError } = await supabase.functions.invoke("handle-speech", {
+        body: {
+          audio: base64Audio,
+          type: "speech-to-text",
+        },
+      });
 
       if (speechError) throw speechError;
-      
-      if (speechData.text) {
-        console.log("Speech converted to text:", speechData.text);
-        
-        const { data: roleplayData, error: roleplayError } =
-          await supabase.functions.invoke("handle-roleplay", {
-            body: {
-              sessionId: session.id,
-              message: speechData.text,
-              context: {
-                avatar_id: session.avatar_id,
-                roleplay_type: session.roleplay_type,
-                scenario_description: session.scenario_description,
-              },
-            },
-          });
 
-        if (roleplayError) throw roleplayError;
-
-        if (roleplayData.response) {
-          console.log("Got response from AI:", roleplayData.response);
-          await speakResponse(roleplayData.response);
-        } else {
-          console.log("No response from AI");
-          setIsThinking(false);
-          startRecording();
-          detectVolume();
-        }
-      } else {
-        console.log("No text from speech conversion");
+      if (!speechData.text) {
+        console.log("No speech detected");
         setIsThinking(false);
         startRecording();
-        detectVolume();
+        return;
+      }
+
+      console.log("Speech detected:", speechData.text);
+
+      const { data: roleplayData, error: roleplayError } = await supabase.functions.invoke("handle-roleplay", {
+        body: {
+          sessionId: session.id,
+          message: speechData.text,
+          context: {
+            avatar_id: session.avatar_id,
+            roleplay_type: session.roleplay_type,
+            scenario_description: session.scenario_description,
+          },
+        },
+      });
+
+      if (roleplayError) throw roleplayError;
+
+      if (roleplayData?.response) {
+        await speakResponse(roleplayData.response);
+      } else {
+        throw new Error("No response from AI");
       }
     } catch (error) {
-      console.error("Error in speech handling:", error);
-      setIsThinking(false);
+      console.error("Error in speech processing:", error);
       toast({
         title: "Error",
         description: "Failed to process speech. Please try again.",
         variant: "destructive",
       });
+      setIsThinking(false);
       startRecording();
-      detectVolume();
     }
   };
 
@@ -420,85 +396,64 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         },
       });
 
-      if (error) {
-        console.log("Error in text to speech:", error);
-        throw error;
+      if (error) throw error;
+
+      if (!data?.audioContent) {
+        throw new Error("No audio content received");
       }
 
-      if (data.audioContent) {
-        const binaryString = atob(data.audioContent);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < bytes.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const audioBlob = new Blob([bytes], { type: "audio/mp3" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-          audioRef.current.src = ""; // Force cleanup
-        }
-
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
-
-        audio.oncanplaythrough = () => {
-          console.log("Audio ready to play");
-          audio.play()
-            .then(() => {
-              console.log("Audio started playing");
-            })
-            .catch((err) => {
-              console.error("Audio playback error:", err);
-              setIsSpeaking(false);
-              startRecording();
-              detectVolume();
-            });
-        };
-
-        audio.onended = () => {
-          console.log("Audio finished playing");
-          URL.revokeObjectURL(audioUrl);
-          setIsSpeaking(false);
-          startRecording();
-          detectVolume();
-        };
-
-        audio.onerror = (e) => {
-          console.error("Audio error:", e);
-          URL.revokeObjectURL(audioUrl);
-          setIsSpeaking(false);
-          startRecording();
-          detectVolume();
-        };
+      const binaryString = atob(data.audioContent);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
-    } catch (error) {
-      console.error("Error in speak response:", error);
-      setIsSpeaking(false);
-      startRecording();
-      detectVolume();
-      
-      // Fallback to browser's text-to-speech
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
 
-      toast({
-        title: "Notice",
-        description: "Using browser's text-to-speech as a fallback.",
-        duration: 3000,
-      });
+      const audioBlob = new Blob([bytes], { type: "audio/mp3" });
+      const audioUrl = URL.createObjectURL(audioBlob);
 
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        startRecording();
-        detectVolume();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.oncanplaythrough = () => {
+        audio.play().catch((err) => {
+          console.error("Audio playback error:", err);
+          cleanup();
+        });
       };
+
+      audio.onended = () => {
+        cleanup();
+      };
+
+      audio.onerror = () => {
+        console.error("Audio playback error");
+        cleanup();
+      };
+
+      const cleanup = () => {
+        URL.revokeObjectURL(audioUrl);
+        setIsSpeaking(false);
+        if (!isEndCallRef.current) {
+          startRecording();
+        }
+      };
+
+    } catch (error) {
+      console.error("Error in speaking response:", error);
+      setIsSpeaking(false);
+      if (!isEndCallRef.current) {
+        startRecording();
+      }
+      toast({
+        title: "Error",
+        description: "Failed to speak response. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
