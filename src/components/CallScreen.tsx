@@ -95,7 +95,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       mimeType = "audio/webm";
     }
 
-    let audioBlob = new Blob(chunksRef.current, { type: mimeType });
+    const audioBlob = new Blob(chunksRef.current, { type: mimeType });
     console.log("Recorded MIME Type:", audioBlob.type);
     mediaRecorderRef.current = null;
 
@@ -114,14 +114,14 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         console.log("Converting audio/mp4 to WAV...");
 
         const inputName = "input.mp4";
-        const outputName = "output.wav";
+        const outputName = "output.webm";
 
         ffmpeg.writeFile(inputName, await fetchFile(audioBlob));
-        await ffmpeg.exec(["-i", inputName, outputName]);
+        await ffmpeg.exec("-i", inputName, "-c:a", "libopus", outputName);
 
         const data = ffmpeg.readFile(outputName);
-        finalBlob = new Blob([data.buffer], { type: "audio/wav" });
-        finalMimeType = "audio/wav";
+        finalBlob = new Blob([data.buffer], { type: "audio/webm" });
+        finalMimeType = "audio/webm";
       }
 
       const reader = new FileReader();
