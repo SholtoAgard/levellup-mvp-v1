@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -193,73 +194,78 @@ const Feedback = () => {
 
           <div className="p-4 sm:p-8 flex-1">
             <div className="max-w-4xl mx-auto space-y-6">
-              <div className="text-center space-y-4">
-                <h2 className="text-2xl font-semibold">{getCallType()}</h2>
-                <h3 className="text-xl">{sessionData.avatarName || "AI Assistant"}</h3>
+              <div className="space-y-4">
+                <h2 className="text-2xl font-semibold text-left">{getCallType()}</h2>
                 
-                <div className="flex justify-center">
+                <div className="flex items-center gap-4">
                   <Avatar className="w-32 h-32">
                     <AvatarImage src={sessionData.avatarImage || ""} alt={sessionData.avatarName || "AI Assistant"} />
                     <AvatarFallback className="text-4xl">
                       {sessionData.avatarName?.[0]?.toUpperCase() || "A"}
                     </AvatarFallback>
                   </Avatar>
-                </div>
-
-                <div className={`text-4xl font-bold ${getScoreColor(score)}`}>
-                  {score}/100
+                  <div className="space-y-2 text-left">
+                    <h3 className="text-xl">{sessionData.avatarName || "AI Assistant"}</h3>
+                    <div className={`text-4xl font-bold ${getScoreColor(score)}`}>
+                      {score}/100
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <Card>
                 <CardHeader className="p-4 sm:p-6">
-                  <CardTitle>Understanding Your Score</CardTitle>
+                  <CardTitle className="text-left">Understanding Your Score</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Strengths Section */}
                     <div>
-                      <h4 className="mb-2">Key Strengths</h4>
+                      <h4 className="text-left mb-2">Key Strengths</h4>
                       <ol className="list-decimal pl-5 space-y-2">
                         {feedbackSections.strengths.map((strength, index) => (
-                          <li key={index} className="text-gray-700">
+                          <li key={index} className="text-gray-700 text-left">
                             {strength}
                           </li>
                         ))}
                       </ol>
                     </div>
 
+                    {/* Areas to Improve Section */}
                     <div>
-                      <h4 className="mb-2">Areas to Improve</h4>
+                      <h4 className="text-left mb-2">Areas to Improve</h4>
                       <ol className="list-decimal pl-5 space-y-2">
                         {feedbackSections.areasToImprove.map((area, index) => (
-                          <li key={index} className="text-gray-700">
+                          <li key={index} className="text-gray-700 text-left">
                             {area}
                           </li>
                         ))}
                       </ol>
                     </div>
 
+                    {/* Recommendations Section */}
                     <div>
-                      <h4 className="mb-2">Recommendations</h4>
+                      <h4 className="text-left mb-2">Recommendations</h4>
                       <ol className="list-decimal pl-5 space-y-2">
                         {feedbackSections.recommendations.map((rec, index) => (
-                          <li key={index} className="text-gray-700">
+                          <li key={index} className="text-gray-700 text-left">
                             {rec}
                           </li>
                         ))}
                       </ol>
                     </div>
 
+                    {/* Additional Metrics Section */}
                     <div>
-                      <h4 className="mb-2">Additional Metrics</h4>
+                      <h4 className="text-left mb-2">Additional Metrics</h4>
                       <div className="space-y-2">
-                        <p className="text-gray-700">
+                        <p className="text-gray-700 text-left">
                           Objection Handling: {feedbackSections.objectionHandling}
                         </p>
-                        <p className="text-gray-700">
+                        <p className="text-gray-700 text-left">
                           Value Proposition: {feedbackSections.valueProposition}
                         </p>
-                        <p className="text-gray-700">
+                        <p className="text-gray-700 text-left">
                           Closing Effectiveness: {feedbackSections.closingEffectiveness}
                         </p>
                       </div>
@@ -269,7 +275,7 @@ const Feedback = () => {
               </Card>
 
               {showButton && (
-                <div className="mt-6 sm:mt-8 text-center">
+                <div className="text-left">
                   <Button
                     size="lg"
                     className="w-full sm:w-auto bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
