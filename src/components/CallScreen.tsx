@@ -371,10 +371,10 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             setIsListening(false);
             setIsThinking(true);
             isSilent = true;
-            if (mediaRecorderRef?.current) {
-              mediaRecorderRef.current.stop();
+            if (recognitionRef?.current) {
+              recognitionRef.current.stop();
             } else {
-              recognitionRef?.current.stop();
+              mediaRecorderRef?.current.stop();
             }
 
             silenceCounter = 0;
@@ -641,7 +641,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     if (analyserRef?.current) {
       analyserRef.current = null;
     }
-    recognitionRef.current.stop();
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
 
     window?.speechSynthesis.cancel();
     navigator.mediaDevices
