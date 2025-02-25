@@ -104,9 +104,8 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     if (audioBlob.size > 0) {
       console.log("Processing audio blob of size:", audioBlob.size);
 
-      // if (!ffmpeg.loaded) {
-      //   await ffmpeg.load();
-      // }
+      await ffmpeg.load();
+
       let finalBlob = audioBlob;
       let finalMimeType = mimeType;
 
