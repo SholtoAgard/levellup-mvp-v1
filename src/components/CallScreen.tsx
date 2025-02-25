@@ -111,7 +111,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       let finalMimeType = mimeType;
 
       if (audioBlob.type === "audio/mp4") {
-        console.log("Converting audio/mp4 to WAV...");
+        console.log("Converting audio/mp4 to webm...");
 
         const inputName = "input.mp4";
         const outputName = "output.webm";
