@@ -37,6 +37,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const processingAudioRef = useRef(false);
   const [showScoreButton, setShowScoreButton] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGettingScore, setIsGettingScore] = useState(false);
 
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
@@ -520,13 +521,14 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
   const handleGetScore = async () => {
     try {
+      setIsGettingScore(true);
       setIsLoading(true);
       setEndVoiceCall(true); // Mark call as ended
       setIsThinking(false);
       setIsSpeaking(false);
       setIsListening(false);
 
-      // Stop all audio and recording
+      // Stop all audio and recording immediately
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -586,6 +588,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         description: "Failed to get conversation score. Please try again.",
         variant: "destructive",
       });
+      setIsGettingScore(false);
     } finally {
       setIsLoading(false);
     }
@@ -618,58 +621,63 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="relative">
-          {isThinking && (
-            <div className="absolute -inset-3 rounded-full">
-              <div className="w-full h-full rounded-full border-8 border-orange-500 border-t-transparent animate-spin" />
+        {isGettingScore ? (
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-lg font-medium text-gray-700">Analyzing your conversation...</p>
+            <p className="text-sm text-gray-500">This may take a few moments</p>
+          </div>
+        ) : (
+          <>
+            <div className="relative">
+              {isThinking && (
+                <div className="absolute -inset-3 rounded-full">
+                  <div className="w-full h-full rounded-full border-8 border-orange-500 border-t-transparent animate-spin" />
+                </div>
+              )}
+              <div className="w-48 h-48 rounded-full relative">
+                <Avatar className="w-full h-full">
+                  <AvatarImage
+                    src={
+                      supabase.storage
+                        .from("avatars")
+                        .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl
+                    }
+                  />
+                </Avatar>
+              </div>
             </div>
-          )}
-          <div
-            className="w-48 h-48 rounded-full relative"
-            // style={{
-            //   background: "linear-gradient(90deg, #FF5733 0%, #FFC300 100%)",
-            // }}
-          >
-            <Avatar className="w-full h-full">
-              <AvatarImage
-                src={
-                  supabase.storage
-                    .from("avatars")
-                    .getPublicUrl(`${session.avatar_id}.jpg`).data.publicUrl
-                }
-              />
-            </Avatar>
-          </div>
-        </div>
 
-        <h2 className="text-2xl font-bold mt-6">{session.avatar_id}</h2>
-        {isListening && (
-          <div className="mt-4 px-4 py-2 bg-purple-100 text-purple-600 rounded-full animate-pulse">
-            Listening...
-          </div>
-        )}
-        {isThinking && (
-          <div className="mt-4 px-4 py-2 bg-orange-100 text-orange-600 rounded-full animate-pulse">
-            Thinking...
-          </div>
-        )}
-        {isSpeaking && (
-          <div className="mt-4 px-4 py-2 bg-green-100 text-green-600 rounded-full animate-pulse">
-            Talking...
-          </div>
+            <h2 className="text-2xl font-bold mt-6">{session.avatar_id}</h2>
+            {isListening && (
+              <div className="mt-4 px-4 py-2 bg-purple-100 text-purple-600 rounded-full animate-pulse">
+                Listening...
+              </div>
+            )}
+            {isThinking && (
+              <div className="mt-4 px-4 py-2 bg-orange-100 text-orange-600 rounded-full animate-pulse">
+                Thinking...
+              </div>
+            )}
+            {isSpeaking && (
+              <div className="mt-4 px-4 py-2 bg-green-100 text-green-600 rounded-full animate-pulse">
+                Talking...
+              </div>
+            )}
+          </>
         )}
       </div>
 
       <div className="p-8 flex justify-center gap-4">
-        {showScoreButton && (
+        {showScoreButton && !isGettingScore && (
           <div className="flex flex-col items-center gap-2">
             <Button
               size="lg"
               className="bg-green-600 hover:bg-green-700 text-white rounded-full w-16 h-16"
               onClick={handleGetScore}
-              disabled={isLoading}
+              disabled={isLoading || isGettingScore}
             >
-              <Award className="w-6 h-6" />
+              <Award className="h-6 w-6" />
             </Button>
             <span className="text-sm font-medium text-gray-600">Get Your Score</span>
           </div>
@@ -680,6 +688,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             size="lg"
             className="rounded-full w-16 h-16"
             onClick={endCall}
+            disabled={isGettingScore}
           >
             <Phone className="w-6 h-6 rotate-135" />
           </Button>
@@ -689,3 +698,5 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     </div>
   );
 };
+
+export default CallScreen;
