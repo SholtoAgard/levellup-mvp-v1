@@ -99,7 +99,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     console.log("Recorded MIME Type:", audioBlob.type);
     mediaRecorderRef.current = null;
 
-    chunksRef.current = [];
+    console.log("audio blob size:", audioBlob.size);
 
     if (audioBlob.size > 0) {
       console.log("Processing audio blob of size:", audioBlob.size);
@@ -132,6 +132,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           await handleSpeech(base64Audio, finalMimeType);
         }
       };
+      chunksRef.current = [];
     }
 
     processingAudioRef.current = false;
