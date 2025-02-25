@@ -66,7 +66,7 @@ const UserSurvey = () => {
                 </p>
                 <Button
                   className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white px-8 py-6 text-lg"
-                  onClick={() => navigate("/feedback")}
+                  onClick={() => window.open("https://forms.gle/z7py3dAkZWyjCgeW6", "_blank")}
                 >
                   Give your feedback
                 </Button>
