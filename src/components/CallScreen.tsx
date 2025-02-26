@@ -588,8 +588,10 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           .then(() => {
             audio.muted = false;
             console.log("Audio played");
+
             setIsThinking(false);
             setIsSpeaking(true);
+            audio.muted = false;
           })
           .catch((err) => console.log("Playback error:", err));
       };
