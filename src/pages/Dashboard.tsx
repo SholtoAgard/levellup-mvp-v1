@@ -1,8 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarProvider } from "@/components/ui/sidebar";
-import { Menu } from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
+import { Box, Menu } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoleplaySession, RoleplayMessage } from "@/lib/types";
@@ -22,7 +28,9 @@ const Dashboard = () => {
   const [selectedAvatar, setSelectedAvatar] = useState("");
   const [selectedRolePlay, setSelectedRolePlay] = useState("");
   const [rolePlayDescription, setRolePlayDescription] = useState("");
-  const [currentSession, setCurrentSession] = useState<RoleplaySession | null>(null);
+  const [currentSession, setCurrentSession] = useState<RoleplaySession | null>(
+    null
+  );
   const [messages, setMessages] = useState<RoleplayMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +46,10 @@ const Dashboard = () => {
 
   const handleAvatarSelect = (avatarId: string) => {
     setSelectedAvatar(avatarId);
-    rolePlayTypeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    rolePlayTypeRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
   };
 
   useEffect(() => {
@@ -51,10 +62,10 @@ const Dashboard = () => {
     if (!currentSession) return;
 
     const { data, error } = await supabase
-      .from('roleplay_messages')
-      .select('*')
-      .eq('session_id', currentSession.id)
-      .order('created_at', { ascending: true });
+      .from("roleplay_messages")
+      .select("*")
+      .eq("session_id", currentSession.id)
+      .order("created_at", { ascending: true });
 
     if (error) {
       toast({
@@ -66,12 +77,12 @@ const Dashboard = () => {
     }
 
     if (data) {
-      const typedMessages: RoleplayMessage[] = data.map(msg => ({
+      const typedMessages: RoleplayMessage[] = data.map((msg) => ({
         id: msg.id,
         session_id: msg.session_id,
-        role: msg.role as 'user' | 'ai',
+        role: msg.role as "user" | "ai",
         content: msg.content,
-        created_at: msg.created_at
+        created_at: msg.created_at,
       }));
       setMessages(typedMessages);
     }
@@ -81,7 +92,8 @@ const Dashboard = () => {
     if (!selectedAvatar || !selectedRolePlay || !rolePlayDescription) {
       toast({
         title: "Missing Information",
-        description: "Please select an avatar, role play type, and provide a scenario description.",
+        description:
+          "Please select an avatar, role play type, and provide a scenario description.",
         variant: "destructive",
       });
       return;
@@ -103,17 +115,19 @@ const Dashboard = () => {
         return;
       }
 
-      const selectedAvatarData = avatars.find(avatar => avatar.id === selectedAvatar);
-      
+      const selectedAvatarData = avatars.find(
+        (avatar) => avatar.id === selectedAvatar
+      );
+
       const { data: session, error } = await supabase
-        .from('roleplay_sessions')
+        .from("roleplay_sessions")
         .insert({
           user_id: userId,
           avatar_id: selectedAvatar,
           avatar_voice_id: selectedAvatarData?.voiceId,
           roleplay_type: selectedRolePlay,
           scenario_description: rolePlayDescription,
-          status: 'in_progress' as const
+          status: "in_progress" as const,
         })
         .select()
         .single();
@@ -123,7 +137,7 @@ const Dashboard = () => {
       }
 
       if (!session) {
-        throw new Error('Failed to create session');
+        throw new Error("Failed to create session");
       }
 
       const typedSession: RoleplaySession = {
@@ -132,20 +146,20 @@ const Dashboard = () => {
         avatar_voice_id: session.avatar_voice_id,
         roleplay_type: session.roleplay_type,
         scenario_description: session.scenario_description,
-        status: session.status as 'in_progress' | 'completed' | 'abandoned',
+        status: session.status as "in_progress" | "completed" | "abandoned",
         created_at: session.created_at,
         updated_at: session.updated_at,
         score: session.score || undefined,
-        feedback: session.feedback || undefined
+        feedback: session.feedback || undefined,
       };
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      navigate('/roleplay', { 
-        state: { 
-          session: typedSession 
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      navigate("/roleplay", {
+        state: {
+          session: typedSession,
         },
-        replace: true
+        replace: true,
       });
 
       toast({
@@ -153,7 +167,7 @@ const Dashboard = () => {
         description: "You can now begin your conversation with the AI.",
       });
     } catch (error) {
-      console.error('Error starting roleplay:', error);
+      console.error("Error starting roleplay:", error);
       toast({
         title: "Error",
         description: "Failed to start roleplay session. Please try again.",
@@ -170,27 +184,34 @@ const Dashboard = () => {
     setIsLoading(true);
     try {
       const messageToSend = text || newMessage;
-      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
-        body: {
-          sessionId: currentSession.id,
-          message: messageToSend,
-          context: currentSession.status === 'in_progress' ? {
-            avatar_id: currentSession.avatar_id,
-            roleplay_type: currentSession.roleplay_type,
-            scenario_description: currentSession.scenario_description
-          } : undefined
+      const { data, error } = await supabase.functions.invoke(
+        "handle-roleplay",
+        {
+          body: {
+            sessionId: currentSession.id,
+            message: messageToSend,
+            context:
+              currentSession.status === "in_progress"
+                ? {
+                    avatar_id: currentSession.avatar_id,
+                    roleplay_type: currentSession.roleplay_type,
+                    scenario_description: currentSession.scenario_description,
+                  }
+                : undefined,
+          },
         }
-      });
+      );
 
       if (error) throw error;
 
       setNewMessage("");
       await loadMessages();
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send message",
+        description:
+          error instanceof Error ? error.message : "Failed to send message",
         variant: "destructive",
       });
     } finally {
@@ -203,21 +224,24 @@ const Dashboard = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('handle-roleplay', {
-        body: {
-          sessionId: currentSession.id,
-          requestScoring: true
+      const { data, error } = await supabase.functions.invoke(
+        "handle-roleplay",
+        {
+          body: {
+            sessionId: currentSession.id,
+            requestScoring: true,
+          },
         }
-      });
+      );
 
       if (error) {
         throw error;
       }
 
       const { data: updatedSession } = await supabase
-        .from('roleplay_sessions')
-        .select('*')
-        .eq('id', currentSession.id)
+        .from("roleplay_sessions")
+        .select("*")
+        .eq("id", currentSession.id)
         .single();
 
       if (updatedSession) {
@@ -226,13 +250,16 @@ const Dashboard = () => {
           avatar_id: updatedSession.avatar_id,
           roleplay_type: updatedSession.roleplay_type,
           scenario_description: updatedSession.scenario_description,
-          status: updatedSession.status as 'in_progress' | 'completed' | 'abandoned',
+          status: updatedSession.status as
+            | "in_progress"
+            | "completed"
+            | "abandoned",
           created_at: updatedSession.created_at,
           updated_at: updatedSession.updated_at,
           score: updatedSession.score || undefined,
-          feedback: updatedSession.feedback || undefined
+          feedback: updatedSession.feedback || undefined,
         };
-        
+
         setCurrentSession(typedSession);
 
         toast({
@@ -241,10 +268,11 @@ const Dashboard = () => {
         });
       }
     } catch (error) {
-      console.error('Error getting score:', error);
+      console.error("Error getting score:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to analyze roleplay",
+        description:
+          error instanceof Error ? error.message : "Failed to analyze roleplay",
         variant: "destructive",
       });
     } finally {
@@ -256,7 +284,7 @@ const Dashboard = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
+        mimeType: "audio/webm",
       });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -268,16 +296,19 @@ const Dashboard = () => {
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
-          const base64Audio = reader.result?.toString().split(',')[1];
+          const base64Audio = reader.result?.toString().split(",")[1];
           if (base64Audio) {
             try {
-              const { data, error } = await supabase.functions.invoke('handle-speech', {
-                body: { audio: base64Audio, type: 'speech-to-text' }
-              });
+              const { data, error } = await supabase.functions.invoke(
+                "handle-speech",
+                {
+                  body: { audio: base64Audio, type: "speech-to-text" },
+                }
+              );
 
               if (error) throw error;
               if (data.text) {
@@ -285,7 +316,7 @@ const Dashboard = () => {
                 await sendMessage(data.text);
               }
             } catch (error) {
-              console.error('Error converting speech to text:', error);
+              console.error("Error converting speech to text:", error);
               toast({
                 title: "Error",
                 description: "Failed to convert speech to text",
@@ -299,7 +330,7 @@ const Dashboard = () => {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
-      console.error('Error accessing microphone:', error);
+      console.error("Error accessing microphone:", error);
       toast({
         title: "Error",
         description: "Failed to access microphone",
@@ -311,7 +342,9 @@ const Dashboard = () => {
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
       setIsRecording(false);
     }
   };
@@ -320,7 +353,7 @@ const Dashboard = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
+        mimeType: "audio/webm",
       });
       descriptionMediaRecorderRef.current = mediaRecorder;
       descriptionChunksRef.current = [];
@@ -332,23 +365,28 @@ const Dashboard = () => {
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(descriptionChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(descriptionChunksRef.current, {
+          type: "audio/webm",
+        });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
-          const base64Audio = reader.result?.toString().split(',')[1];
+          const base64Audio = reader.result?.toString().split(",")[1];
           if (base64Audio) {
             try {
-              const { data, error } = await supabase.functions.invoke('handle-speech', {
-                body: { audio: base64Audio, type: 'speech-to-text' }
-              });
+              const { data, error } = await supabase.functions.invoke(
+                "handle-speech",
+                {
+                  body: { audio: base64Audio, type: "speech-to-text" },
+                }
+              );
 
               if (error) throw error;
               if (data.text) {
                 setRolePlayDescription(data.text);
               }
             } catch (error) {
-              console.error('Error converting speech to text:', error);
+              console.error("Error converting speech to text:", error);
               toast({
                 title: "Error",
                 description: "Failed to convert speech to text",
@@ -362,7 +400,7 @@ const Dashboard = () => {
       mediaRecorder.start();
       setIsDescriptionRecording(true);
     } catch (error) {
-      console.error('Error accessing microphone:', error);
+      console.error("Error accessing microphone:", error);
       toast({
         title: "Error",
         description: "Failed to access microphone",
@@ -374,7 +412,9 @@ const Dashboard = () => {
   const stopDescriptionRecording = () => {
     if (descriptionMediaRecorderRef.current && isDescriptionRecording) {
       descriptionMediaRecorderRef.current.stop();
-      descriptionMediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      descriptionMediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
       setIsDescriptionRecording(false);
     }
   };
@@ -442,14 +482,15 @@ const Dashboard = () => {
                     onStartRecording={startDescriptionRecording}
                     onStopRecording={stopDescriptionRecording}
                   />
-
-                  <Button 
-                    className="w-full max-w-md mx-auto block py-6 text-lg bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
-                    onClick={startRoleplay}
-                    data-start-roleplay
-                  >
-                    Start Role Play
-                  </Button>
+                  <div className="flex justify-center py-2">
+                    <Button
+                      className="w-full max-w-md mx-auto flex items-center justify-center py-6 text-lg bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+                      onClick={startRoleplay}
+                      data-start-roleplay
+                    >
+                      Start Role Play
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <ChatInterface

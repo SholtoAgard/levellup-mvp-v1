@@ -632,7 +632,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
     // Stop and release media recorder
     if (mediaRecorderRef?.current) {
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => {
+      mediaRecorderRef.current.stream?.getTracks()?.forEach((track) => {
         track.stop();
         track.enabled = false;
       });
@@ -675,7 +675,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           navigator.mediaDevices
             .getUserMedia({ audio: true })
             .then((stream) => {
-              stream.getTracks().forEach((track) => {
+              stream?.getTracks()?.forEach((track) => {
                 track.stop();
                 stream.removeTrack(track);
               });
@@ -708,6 +708,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       setIsLoading(true);
 
       // End the call first
+      const meetingDuration = callDuration / 60;
 
       const {
         data: { user },
@@ -818,9 +819,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       } else if (mediaRecorder) {
         mediaRecorder.stream.getTracks().forEach((track) => track.stop());
       }
-      stream
-        .getTracks() // get all tracks from the MediaStream
-        .forEach((track) => track.stop()); // stop each of them
+      stream?.getTracks()?.forEach((track) => track.stop()); // stop each of them
       if (audioContextRef?.current) {
         audioContextRef.current.close();
       }
@@ -828,7 +827,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         analyserRef.current = null;
       }
       if (recognitionRef?.current) {
-        recognitionRef.current.end(); // Ensures full stop
+        recognitionRef.current.abort(); // Ensures full stop
         recognitionRef.current.onend = null; // Remove any event listeners
         recognitionRef.current = null;
       }
@@ -863,6 +862,10 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           userImage:
             // @ts-ignore
             "",
+          // @ts-ignore
+          userEmail: user?.email || "Anonymous",
+          roleplay_type: session.roleplay_type,
+          meetingDuration,
         },
         replace: true,
       });

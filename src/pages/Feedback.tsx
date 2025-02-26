@@ -36,6 +36,11 @@ const Feedback = () => {
   const sessionData = location.state || {};
   const score = parseInt(sessionData.score) || 0;
   const feedback = sessionData.feedback || "";
+  const {
+    userEmail = "Anonymous",
+    roleplay_type = "cold_call",
+    meetingDuration = 0,
+  } = sessionData;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -57,85 +62,90 @@ const Feedback = () => {
       closingEffectiveness: "N/A",
     };
 
-    const lines = feedbackText.split("\n");
-    lines.forEach((line) => {
-      const trimmedLine = line.trim();
-      if (trimmedLine.startsWith("Objection Handling:")) {
-        sections.objectionHandling = trimmedLine
-          .replace("Objection Handling:", "")
-          .trim();
-      } else if (trimmedLine.startsWith("Value Proposition:")) {
-        sections.valueProposition = trimmedLine
-          .replace("Value Proposition:", "")
-          .trim();
-      } else if (trimmedLine.startsWith("Closing Effectiveness:")) {
-        sections.closingEffectiveness = trimmedLine
-          .replace("Closing Effectiveness:", "")
-          .trim();
-      }
-    });
-
+    // Extract the main feedback text
     const feedbackPart =
       feedbackText.split("FEEDBACK:")[1]?.trim() || feedbackText;
-    const paragraphs = feedbackPart.split("\n\n").filter((p) => p.trim());
 
-    sections.summary = paragraphs[0]?.trim() || "";
+    // Set the first sentence as summary
+    const sentences = feedbackPart.split(/[.!?]+/).filter((s) => s.trim());
+    sections.summary = sentences[0]?.trim() || "";
 
-    const remainingText = paragraphs.slice(1).join(" ");
-
+    // Extract strengths
     const strengthPatterns = [
-      /(?:demonstrated|showed|exhibited|displayed|had|was|were)\s+(?:good|high|strong|effective|successful|excellent|polite)[^.!?]*[.!?]/gi,
+      /displays? (?:a )?(?:high|good|strong|effective|successful|excellent|polite)[^.!?]*[.!?]/gi,
       /(?:good|high|strong|effective|successful|excellent|polite)[^.!?]*[.!?]/gi,
+      /(?:was able to|managed to|successfully)[^.!?]*[.!?]/gi,
+      /maintaining professionalism[^.!?]*[.!?]/gi,
     ];
 
     strengthPatterns.forEach((pattern) => {
-      const matches = remainingText.match(pattern) || [];
+      const matches = feedbackPart.match(pattern) || [];
       sections.strengths.push(
         ...matches
-          .filter((match) => !match.toLowerCase().includes("however"))
+          .filter(
+            (match) =>
+              !match.toLowerCase().includes("however") &&
+              !match.toLowerCase().includes("could")
+          )
           .map((match) => match.trim())
       );
     });
 
+    // Extract areas to improve
     const improvementPatterns = [
-      /Areas for improvement include[^.]*(?:[^.]*\.)/gi,
-      /(?:need to|failed to|lack of|weak|improve|better|could have)[^.!?]*[.!?]/gi,
-      /(?:room for improvement)[^.!?]*[.!?]/gi,
+      /could be improved[^.!?]*[.!?]/gi,
+      /(?:did not|didn't|could|should)[^.!?]*[.!?]/gi,
+      /(?:to improve)[^.!?]*[.!?]/gi,
     ];
 
     improvementPatterns.forEach((pattern) => {
-      const matches = remainingText.match(pattern) || [];
+      const matches = feedbackPart.match(pattern) || [];
       sections.areasToImprove.push(
         ...matches
-          .map((match) =>
-            match.replace(/Areas for improvement include/i, "").trim()
-          )
-          .filter((match) => match.length > 0)
+          .filter((match) => !sections.strengths.includes(match.trim()))
+          .map((match) => match.trim())
       );
     });
 
-    const recommendationPatterns = [
-      /(?:should|could|needs? to|try to|work on|focus on)[^.!?]*[.!?]/gi,
-    ];
+    // Extract recommendations
+    const recommendationMatches =
+      feedbackPart.match(
+        /(?:could|should|needs? to|try to|work on|focus on)[^.!?]*[.!?]/gi
+      ) || [];
+    sections.recommendations = recommendationMatches
+      .filter(
+        (rec) =>
+          !sections.strengths.includes(rec.trim()) &&
+          !sections.areasToImprove.includes(rec.trim())
+      )
+      .map((rec) => rec.trim());
 
-    recommendationPatterns.forEach((pattern) => {
-      const matches = remainingText.match(pattern) || [];
-      sections.recommendations.push(
-        ...matches
-          .filter((rec) => !sections.areasToImprove.includes(rec.trim()))
-          .map((rec) => rec.trim())
-      );
-    });
-
+    // Clean up duplicates
     sections.strengths = [...new Set(sections.strengths)];
     sections.areasToImprove = [...new Set(sections.areasToImprove)];
     sections.recommendations = [...new Set(sections.recommendations)];
 
+    // Add default message if no strengths found
     if (sections.strengths.length === 0) {
       sections.strengths.push(
-        "Focus on the areas of improvement to enhance your performance."
+        "Maintained professional communication throughout the conversation."
       );
     }
+
+    // Extract metrics if present
+    const metricsPatterns = {
+      objectionHandling: /objection handling[^.!?]*[.!?]/gi,
+      valueProposition: /value proposition[^.!?]*[.!?]/gi,
+      closingEffectiveness: /closing[^.!?]*[.!?]/gi,
+    };
+
+    Object.entries(metricsPatterns).forEach(([key, pattern]) => {
+      const matches = feedbackPart.match(pattern);
+      if (matches?.length > 0) {
+        // @ts-ignore
+        sections[key as keyof typeof sections] = matches[0].trim();
+      }
+    });
 
     return sections;
   };
@@ -207,79 +217,106 @@ const Feedback = () => {
               </div>
 
               <div className="space-y-6 text-left">
-                {/* <h2 className="text-2xl">
-                  {getCallType()} - {sessionData.avatarName || "AI Assistant"}
-                </h2>
+                <div className="flex flex-col sm:flex-row items-start gap-2 mb-4 sm:mb-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-semibold text-gray-900">
+                      {roleplay_type === "discovery_call"
+                        ? "Discovery Call"
+                        : "Cold Call"}
+                    </span>
+                    <span className="text-xl text-gray-400">•</span>
+                    <span className="text-xl text-gray-600 font-medium">
+                      {userEmail}
+                    </span>
+                  </div>
+                  {meetingDuration > 0 && (
+                    <span className="text-sm text-gray-500 sm:ml-auto">
+                      Duration: {Math.floor(meetingDuration)}m{" "}
+                      {Math.round((meetingDuration % 1) * 60)}s
+                    </span>
+                  )}
+                </div>
 
-                <div className="w-32 h-32 overflow-hidden">
-                  <img
-                    src={sessionData.avatarImage || ""}
-                    alt={sessionData.avatarName || "AI Assistant"}
-                    className="w-full h-full object-cover"
-                  />
-                </div> */}
                 <h2 className="text-2xl">Overall Call Score:</h2>
                 <div className={`text-4xl font-bold ${getScoreColor(score)}`}>
-                  {score}/100
+                  {score === 0 ? 30 : score}/100
                 </div>
 
                 <h3 className="text-lg font-small">Understanding Your Score</h3>
 
                 <Card>
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="grid grid-cols-1 gap-6">
-                      {/* Strengths Section */}
-                      <div>
-                        <h4 className="text-left mb-2">
-                          What you did well in this call
-                        </h4>
+                  {meetingDuration < 1 ? (
+                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                      <div className="flex">
+                        <div className="ml-3">
+                          <p className="text-sm text-yellow-700">
+                            For better evaluation, please conduct calls for at
+                            least 2 minutes. Short calls may not provide enough
+                            context for accurate feedback.
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-left mb-2">Key Strengths</h4>
-                        <ol className="list-decimal pl-5 space-y-2">
-                          {feedbackSections.strengths.map((strength, index) => (
-                            <li key={index} className="text-gray-700 text-left">
-                              {strength}
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
+                    </div>
+                  ) : (
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="grid grid-cols-1 gap-6">
+                        {/* Strengths Section */}
+                        <div>
+                          <h4 className="text-left mb-2">
+                            What you did well in this call
+                          </h4>
+                        </div>
+                        <div>
+                          <h4 className="text-left mb-2">Key Strengths</h4>
+                          <ol className="list-decimal pl-5 space-y-2">
+                            {feedbackSections.strengths.map(
+                              (strength, index) => (
+                                <li
+                                  key={index}
+                                  className="text-gray-700 text-left"
+                                >
+                                  {strength}
+                                </li>
+                              )
+                            )}
+                          </ol>
+                        </div>
 
-                      {/* Areas to Improve Section */}
-                      <div>
-                        <h4 className="text-left mb-2">Areas to Improve</h4>
-                        <ol className="list-decimal pl-5 space-y-2">
-                          {feedbackSections.areasToImprove.map(
-                            (area, index) => (
-                              <li
-                                key={index}
-                                className="text-gray-700 text-left"
-                              >
-                                {area}
-                              </li>
-                            )
-                          )}
-                        </ol>
-                      </div>
+                        {/* Areas to Improve Section */}
+                        <div>
+                          <h4 className="text-left mb-2">Areas to Improve</h4>
+                          <ol className="list-decimal pl-5 space-y-2">
+                            {feedbackSections.areasToImprove.map(
+                              (area, index) => (
+                                <li
+                                  key={index}
+                                  className="text-gray-700 text-left"
+                                >
+                                  {area}
+                                </li>
+                              )
+                            )}
+                          </ol>
+                        </div>
 
-                      {/* Recommendations Section */}
-                      <div>
-                        <h4 className="text-left mb-2">Recommendations</h4>
-                        <ol className="list-decimal pl-5 space-y-2">
-                          {feedbackSections.recommendations.map(
-                            (rec, index) => (
-                              <li
-                                key={index}
-                                className="text-gray-700 text-left"
-                              >
-                                {rec}
-                              </li>
-                            )
-                          )}
-                        </ol>
-                      </div>
+                        {/* Recommendations Section */}
+                        <div>
+                          <h4 className="text-left mb-2">Recommendations</h4>
+                          <ol className="list-decimal pl-5 space-y-2">
+                            {feedbackSections.recommendations.map(
+                              (rec, index) => (
+                                <li
+                                  key={index}
+                                  className="text-gray-700 text-left"
+                                >
+                                  {rec}
+                                </li>
+                              )
+                            )}
+                          </ol>
+                        </div>
 
-                      {/* Additional Metrics Section
+                        {/* Additional Metrics Section
                       <div>
                         <h4 className="text-left mb-2">Additional Metrics</h4>
                         <div className="space-y-2">
@@ -297,8 +334,9 @@ const Feedback = () => {
                           </p>
                         </div>
                       </div> */}
-                    </div>
-                  </CardContent>
+                      </div>
+                    </CardContent>
+                  )}
                 </Card>
               </div>
 
