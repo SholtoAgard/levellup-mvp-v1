@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
@@ -15,8 +14,8 @@ import Footer from "@/components/Footer";
 import { Check, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-// Initialize Stripe with test publishable key
-const stripePromise = loadStripe("pk_test_51HA5oHHYcRfijJBsAxDzfvHf4LhhKoQputSDEU0rQcBTQvYWQi9ci76CAxSVIcRMjYDuzshvbK0qcxl8gSYnrXIc00axV69scf");
+// Initialize Stripe with live publishable key
+const stripePromise = loadStripe("YOUR_LIVE_PUBLISHABLE_KEY"); // Replace this with your live publishable key
 
 const CheckoutForm = () => {
   const stripe = useStripe();
