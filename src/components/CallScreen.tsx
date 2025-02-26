@@ -565,11 +565,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       audioRef.current = audio;
 
       // ✅ Ensure AudioContext is resumed (important for Safari/iOS)
-      // if (audioContext && audioContext?.state === "suspended") {
-      //   console.log("Resuming audio context");
-
-      //   await audioContext.resume();
-      // }
+      if (audioContextRef?.current?.state === "suspended") {
+        await audioContextRef?.current?.resume();
+      }
       audio.muted = true; // Start muted
 
       // Ensure AudioContext is resumed (important for Safari/iOS)
