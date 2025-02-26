@@ -199,15 +199,17 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         console.log("Speech recognition stopped");
         setIsListening(false);
         recognitionFlagRef.current = "stopped";
-        if (!isEndCallRef.current) {
-          console.log("Processing audio data testing...");
-          await handleRolePlay(transcript);
 
-          // Start a new recording only if the latest ref values indicate we should
-          if (!isSpeakingRef.current && !isThinkingRef.current) {
-            recognitionRef.current.start();
-            detectVolume();
-          }
+        if (isEndCallRef.current) {
+          console.log("Call ended, stopping microphone usage.");
+          return; // Do nothing further
+        }
+        await handleRolePlay(transcript);
+
+        // Start a new recording only if the latest ref values indicate we should
+        if (!isSpeakingRef.current && !isThinkingRef.current) {
+          recognitionRef.current.start();
+          detectVolume();
         }
       };
       recognitionRef.current.onend = async () => {
@@ -656,7 +658,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
     // Stop speech recognition if active
     if (recognitionRef?.current) {
-      recognitionRef.current.abort();
+      recognitionRef.current.stop();
       recognitionRef.current.onend = null;
       recognitionRef.current = null;
     }
@@ -825,7 +827,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         analyserRef.current = null;
       }
       if (recognitionRef?.current) {
-        recognitionRef.current.abort(); // Ensures full stop
+        recognitionRef.current.end(); // Ensures full stop
         recognitionRef.current.onend = null; // Remove any event listeners
         recognitionRef.current = null;
       }
