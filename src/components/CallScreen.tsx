@@ -18,6 +18,7 @@ interface CallScreenProps {
 }
 
 let mediaRecorder: MediaRecorder;
+let stream;
 
 export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const [isListening, setIsListening] = useState(true);
@@ -143,7 +144,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
   const startCall = async () => {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    const stream = await navigator.mediaDevices.getUserMedia({
+    stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
@@ -214,35 +215,23 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         setIsListening(false);
         recognitionFlagRef.current = "ended";
 
-        if (!isEndCallRef.current) {
-          console.log("Processing audio data testing...");
-          await handleRolePlay(transcript);
+        if (isEndCallRef.current) {
+          console.log("Call ended, stopping microphone usage.");
+          return; // Do nothing further
+        }
 
-          // Start a new recording only if the latest ref values indicate we should
-          if (!isSpeakingRef.current && !isThinkingRef.current) {
-            recognitionRef.current.start();
-            detectVolume();
-          }
+        await handleRolePlay(transcript);
+
+        // Start a new recording only if the latest ref values indicate we should
+        if (!isSpeakingRef.current && !isThinkingRef.current) {
+          recognitionRef.current.start();
+          detectVolume();
         }
       };
 
       recognitionRef.current.start();
     } else {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        });
-
-        audioContextRef.current = new AudioContext();
-        analyserRef.current = audioContextRef.current.createAnalyser();
-        const source = audioContextRef.current.createMediaStreamSource(stream);
-        source.connect(analyserRef.current);
-        analyserRef.current.fftSize = 256;
-
         let mimeType = "audio/webm";
         let isSupported = MediaRecorder.isTypeSupported(mimeType);
 
@@ -293,15 +282,18 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             isThinkingRef.current
           );
 
-          if (!isEndCallRef.current) {
-            console.log("Processing audio data testing...");
-            await processAudioData();
+          if (isEndCallRef.current) {
+            console.log("Call ended, stopping microphone usage.");
+            return; // Do nothing further
+          }
 
-            // Start a new recording only if the latest ref values indicate we should
-            if (!isSpeakingRef.current && !isThinkingRef.current) {
-              startRecording();
-              detectVolume();
-            }
+          console.log("Processing audio data testing...");
+          await processAudioData();
+
+          // Start a new recording only if the latest ref values indicate we should
+          if (!isSpeakingRef.current && !isThinkingRef.current) {
+            startRecording();
+            detectVolume();
           }
         };
 
@@ -623,41 +615,87 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
   const endCall = () => {
     setEndVoiceCall(true);
+    isEndCallRef.current = true; // Mark call as ended
+
+    // Stop and reset audio playback
     if (audioRef?.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0; // Reset audio position
+      audioRef.current.currentTime = 0;
     }
+
+    // Stop and release media recorder
     if (mediaRecorderRef?.current) {
-      mediaRecorderRef.current.stream
-        .getTracks()
-        .forEach((track) => track.stop());
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false;
+      });
       mediaRecorderRef.current = null;
-    } else if (mediaRecorder) {
-      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
     }
+    stream
+      .getTracks() // get all tracks from the MediaStream
+      .forEach((track) => track.stop()); // stop each of them
+
+    if (mediaRecorder) {
+      mediaRecorder.stream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false;
+      });
+    }
+
+    // Close the audio context
     if (audioContextRef?.current) {
       audioContextRef.current.close();
+      audioContextRef.current = null;
     }
+
+    // Remove analyser
     if (analyserRef?.current) {
       analyserRef.current = null;
     }
+
+    // Stop speech recognition if active
     if (recognitionRef?.current) {
-      recognitionRef.current.abort(); // Ensures full stop
-      recognitionRef.current.onend = null; // Remove any event listeners
+      recognitionRef.current.abort();
+      recognitionRef.current.onend = null;
       recognitionRef.current = null;
     }
 
-    window?.speechSynthesis.cancel();
+    // Cancel speech synthesis
+    window.speechSynthesis.cancel();
 
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((stream) => {
-        stream.getTracks().forEach((track) => {
-          track.stop();
+    // **Stop all active media streams from the microphone**
+    navigator.mediaDevices.enumerateDevices().then((devices) => {
+      devices
+        .filter((device) => device.kind === "audioinput")
+        .forEach(() => {
+          navigator.mediaDevices
+            .getUserMedia({ audio: true })
+            .then((stream) => {
+              stream.getTracks().forEach((track) => {
+                track.stop();
+                stream.removeTrack(track);
+              });
+            })
+            .catch((err) => console.error("Error stopping media stream:", err));
         });
-      })
-      .catch((err) => console.error("Error stopping media stream:", err));
+    });
 
+    // **Forcefully stop all media tracks**
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      stream.getTracks().forEach((track) => track.stop());
+    });
+
+    // **Revoke any remaining media stream**
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      stream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false; // Ensure track is disabled
+      });
+    });
+
+    console.log("Microphone should now be completely disabled.");
+
+    // Navigate back
     navigate(-1);
   };
 
@@ -666,17 +704,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       setIsLoading(true);
 
       // End the call first
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stream
-          .getTracks()
-          .forEach((track) => track.stop());
-        mediaRecorderRef.current = null;
-      }
-      window.speechSynthesis.cancel();
+
       const {
         data: { user },
         error: authError,
@@ -688,16 +716,16 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       }
 
       // Get user profile data
-      const { data: userData, error: userError } = await supabase
-        // @ts-ignore
-        .from("users")
-        .select("full_name, avatar_url")
-        .eq("id", user?.id)
-        .single();
+      // const { data: userData, error: userError } = await supabase
+      //   // @ts-ignore
+      //   .from("users")
+      //   .select("full_name, avatar_url")
+      //   .eq("id", user?.id)
+      //   .single();
 
-      if (userError) {
-        console.error("Error fetching user data:", userError);
-      }
+      // if (userError) {
+      //   console.error("Error fetching user data:", userError);
+      // }
       // Get score and feedback from the roleplay endpoint
       const { data, error } = await supabase.functions.invoke(
         "handle-roleplay",
@@ -773,6 +801,45 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
         .eq("id", session.id);
 
       if (updateError) throw updateError;
+      setEndVoiceCall(true);
+      if (audioRef?.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0; // Reset audio position
+      }
+      if (mediaRecorderRef?.current) {
+        mediaRecorderRef.current.stream
+          .getTracks()
+          .forEach((track) => track.stop());
+        mediaRecorderRef.current = null;
+      } else if (mediaRecorder) {
+        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      }
+      stream
+        .getTracks() // get all tracks from the MediaStream
+        .forEach((track) => track.stop()); // stop each of them
+      if (audioContextRef?.current) {
+        audioContextRef.current.close();
+      }
+      if (analyserRef?.current) {
+        analyserRef.current = null;
+      }
+      if (recognitionRef?.current) {
+        recognitionRef.current.abort(); // Ensures full stop
+        recognitionRef.current.onend = null; // Remove any event listeners
+        recognitionRef.current = null;
+      }
+
+      window?.speechSynthesis.cancel();
+
+      window.navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
+        })
+        .catch((err) => console.error("Error stopping media stream:", err));
+
       navigate("/feedback", {
         state: {
           sessionId: session.id,
@@ -787,33 +854,15 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             closingEffectiveness: extractedScores.closingEffectiveness,
           },
           // @ts-ignore
-          userName: userData?.full_name || user?.email?.split("@")[0] || "User",
+          userName: "User",
           // @ts-ignore
           userImage:
             // @ts-ignore
-            userData?.avatar_url || "",
+            "",
         },
         replace: true,
       });
-      setEndVoiceCall(true);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0; // Reset audio position
-      }
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stream
-          .getTracks()
-          .forEach((track) => track.stop());
-        mediaRecorderRef.current = null;
-      } else {
-        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      if (analyserRef.current) {
-        analyserRef.current = null;
-      }
+
       window.speechSynthesis.cancel();
     } catch (error) {
       console.error("Error getting score:", error);
