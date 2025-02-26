@@ -546,7 +546,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       // throw error;
     }
 
-    if (data.audioContent) {
+    if (data.audioContent && !isEndCallRef.current) {
       const binaryString = atob(data.audioContent);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -625,7 +625,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     }
 
     stream
-      .getTracks() // get all tracks from the MediaStream
+      ?.getTracks() // get all tracks from the MediaStream
       .forEach((track) => track.stop()); // stop each of them
 
     // Stop and release media recorder
@@ -805,42 +805,90 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (updateError) throw updateError;
       setEndVoiceCall(true);
-      isEndCallRef.current = true;
+      isEndCallRef.current = true; // Mark call as ended
+
+      // Stop and reset audio playback
       if (audioRef?.current) {
         audioRef.current.pause();
-        audioRef.current.currentTime = 0; // Reset audio position
+        audioRef.current.currentTime = 0;
       }
+
+      stream
+        ?.getTracks() // get all tracks from the MediaStream
+        .forEach((track) => track.stop()); // stop each of them
+
+      // Stop and release media recorder
       if (mediaRecorderRef?.current) {
-        mediaRecorderRef.current.stream
-          .getTracks()
-          .forEach((track) => track.stop());
+        mediaRecorderRef.current.stream?.getTracks()?.forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
         mediaRecorderRef.current = null;
-      } else if (mediaRecorder) {
-        mediaRecorder.stream?.getTracks().forEach((track) => track.stop());
       }
-      stream?.getTracks()?.forEach((track) => track.stop()); // stop each of them
+
+      if (mediaRecorder) {
+        mediaRecorder.stream?.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
+      }
+
+      // Close the audio context
       if (audioContextRef?.current) {
         audioContextRef.current.close();
+        audioContextRef.current = null;
       }
+
+      // Remove analyser
       if (analyserRef?.current) {
         analyserRef.current = null;
       }
+
+      // Stop speech recognition if active
       if (recognitionRef?.current) {
-        recognitionRef.current.abort(); // Ensures full stop
-        recognitionRef.current.onend = null; // Remove any event listeners
+        recognitionRef.current.stop();
+        recognitionRef.current.onend = null;
         recognitionRef.current = null;
       }
 
-      window?.speechSynthesis.cancel();
+      // Cancel speech synthesis
+      window.speechSynthesis.cancel();
 
-      window.navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          stream?.getTracks().forEach((track) => {
-            track.stop();
+      // **Stop all active media streams from the microphone**
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
+        devices
+          .filter((device) => device.kind === "audioinput")
+          .forEach(() => {
+            navigator.mediaDevices
+              .getUserMedia({ audio: true })
+              .then((stream) => {
+                stream?.getTracks()?.forEach((track) => {
+                  track.stop();
+                  stream?.removeTrack(track);
+                });
+              })
+              .catch((err) =>
+                console.error("Error stopping media stream:", err)
+              );
           });
-        })
-        .catch((err) => console.error("Error stopping media stream:", err));
+      });
+
+      // **Forcefully stop all media tracks**
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        stream?.getTracks().forEach((track) => track.stop());
+      });
+
+      // **Revoke any remaining media stream**
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        stream?.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false; // Ensure track is disabled
+        });
+      });
+
+      console.log("Microphone should now be completely disabled.");
+
+      // Navigate back
 
       navigate("/feedback", {
         state: {
