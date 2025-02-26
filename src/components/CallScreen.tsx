@@ -640,7 +640,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     }
 
     if (mediaRecorder) {
-      mediaRecorder.stream.getTracks().forEach((track) => {
+      mediaRecorder.stream?.getTracks().forEach((track) => {
         track.stop();
         track.enabled = false;
       });
@@ -677,7 +677,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
             .then((stream) => {
               stream?.getTracks()?.forEach((track) => {
                 track.stop();
-                stream.removeTrack(track);
+                stream?.removeTrack(track);
               });
             })
             .catch((err) => console.error("Error stopping media stream:", err));
@@ -686,12 +686,12 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
     // **Forcefully stop all media tracks**
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      stream.getTracks().forEach((track) => track.stop());
+      stream?.getTracks().forEach((track) => track.stop());
     });
 
     // **Revoke any remaining media stream**
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      stream.getTracks().forEach((track) => {
+      stream?.getTracks().forEach((track) => {
         track.stop();
         track.enabled = false; // Ensure track is disabled
       });
@@ -700,7 +700,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
     console.log("Microphone should now be completely disabled.");
 
     // Navigate back
-    navigate(-1);
+    navigate("/dashboard");
   };
 
   const handleGetScore = async () => {
@@ -807,6 +807,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       if (updateError) throw updateError;
       setEndVoiceCall(true);
+      isEndCallRef.current = true;
       if (audioRef?.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0; // Reset audio position
@@ -817,7 +818,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
           .forEach((track) => track.stop());
         mediaRecorderRef.current = null;
       } else if (mediaRecorder) {
-        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+        mediaRecorder.stream?.getTracks().forEach((track) => track.stop());
       }
       stream?.getTracks()?.forEach((track) => track.stop()); // stop each of them
       if (audioContextRef?.current) {
@@ -837,7 +838,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       window.navigator.mediaDevices
         .getUserMedia({ audio: true })
         .then((stream) => {
-          stream.getTracks().forEach((track) => {
+          stream?.getTracks().forEach((track) => {
             track.stop();
           });
         })
