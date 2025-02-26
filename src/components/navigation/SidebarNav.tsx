@@ -1,73 +1,125 @@
 
-import { useNavigate } from "react-router-dom";
-import { HomeIcon, Users, HelpCircle, User, MessageSquare } from "lucide-react";
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  UserCircle,
+  Receipt,
+  HelpCircle,
+  FileText,
+  Share2,
+  MessageCircle,
+  ClipboardList,
+} from "lucide-react";
 
-export const SidebarNav = ({ onNavigation }: { onNavigation?: () => void }) => {
-  const navigate = useNavigate();
+interface SidebarNavProps {
+  onNavigation?: () => void;
+}
+
+export const SidebarNav = ({ onNavigation }: SidebarNavProps) => {
+  const handleClick = () => {
+    if (onNavigation) {
+      onNavigation();
+    }
+  };
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/');
-            onNavigation?.();
-          }}
-        >
-          <HomeIcon className="w-5 h-5" />
-          <span>Home</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/dashboard');
-            onNavigation?.();
-          }}
-        >
-          <Users className="w-5 h-5" />
-          <span>Dashboard</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/support');
-            onNavigation?.();
-          }}
-        >
-          <HelpCircle className="w-5 h-5" />
-          <span>Support center</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/account');
-            onNavigation?.();
-          }}
-        >
-          <User className="w-5 h-5" />
-          <span>My Account</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <SidebarMenuButton 
-          className="w-full text-black"
-          onClick={() => {
-            navigate('/user-survey');
-            onNavigation?.();
-          }}
-        >
-          <MessageSquare className="w-5 h-5" />
-          <span>Give me feedback</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
+    <nav className="space-y-2">
+      <NavLink
+        to="/dashboard"
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 ${
+            isActive ? "bg-gray-100 text-gray-900" : ""
+          }`
+        }
+        onClick={handleClick}
+      >
+        <LayoutDashboard className="h-4 w-4" />
+        Dashboard
+      </NavLink>
+      <NavLink
+        to="/account"
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 ${
+            isActive ? "bg-gray-100 text-gray-900" : ""
+          }`
+        }
+        onClick={handleClick}
+      >
+        <UserCircle className="h-4 w-4" />
+        Account
+      </NavLink>
+      <NavLink
+        to="/subscription"
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 ${
+            isActive ? "bg-gray-100 text-gray-900" : ""
+          }`
+        }
+        onClick={handleClick}
+      >
+        <Receipt className="h-4 w-4" />
+        Subscription
+      </NavLink>
+      <NavLink
+        to="/support"
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 ${
+            isActive ? "bg-gray-100 text-gray-900" : ""
+          }`
+        }
+        onClick={handleClick}
+      >
+        <HelpCircle className="h-4 w-4" />
+        Support
+      </NavLink>
+      <NavLink
+        to="/terms"
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 ${
+            isActive ? "bg-gray-100 text-gray-900" : ""
+          }`
+        }
+        onClick={handleClick}
+      >
+        <FileText className="h-4 w-4" />
+        Terms
+      </NavLink>
+      <NavLink
+        to="/refer"
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 ${
+            isActive ? "bg-gray-100 text-gray-900" : ""
+          }`
+        }
+        onClick={handleClick}
+      >
+        <Share2 className="h-4 w-4" />
+        Refer
+      </NavLink>
+      <NavLink
+        to="/feedback"
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 ${
+            isActive ? "bg-gray-100 text-gray-900" : ""
+          }`
+        }
+        onClick={handleClick}
+      >
+        <MessageCircle className="h-4 w-4" />
+        Feedback
+      </NavLink>
+      <NavLink
+        to="/user-survey"
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 ${
+            isActive ? "bg-gray-100 text-gray-900" : ""
+          }`
+        }
+        onClick={handleClick}
+      >
+        <ClipboardList className="h-4 w-4" />
+        Survey
+      </NavLink>
+    </nav>
   );
 };
