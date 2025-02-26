@@ -245,7 +245,7 @@ const Feedback = () => {
                 <h3 className="text-lg font-small">Understanding Your Score</h3>
 
                 <Card>
-                  {meetingDuration < 1 ? (
+                  {meetingDuration < 2 ? (
                     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
                       <div className="flex">
                         <div className="ml-3">
