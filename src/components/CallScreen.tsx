@@ -626,6 +626,10 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       audioRef.current.currentTime = 0;
     }
 
+    stream
+      .getTracks() // get all tracks from the MediaStream
+      .forEach((track) => track.stop()); // stop each of them
+
     // Stop and release media recorder
     if (mediaRecorderRef?.current) {
       mediaRecorderRef.current.stream.getTracks().forEach((track) => {
@@ -634,9 +638,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       });
       mediaRecorderRef.current = null;
     }
-    stream
-      .getTracks() // get all tracks from the MediaStream
-      .forEach((track) => track.stop()); // stop each of them
 
     if (mediaRecorder) {
       mediaRecorder.stream.getTracks().forEach((track) => {
