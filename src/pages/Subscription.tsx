@@ -15,7 +15,7 @@ import { Check, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 // Initialize Stripe with live publishable key
-const stripePromise = loadStripe("YOUR_LIVE_PUBLISHABLE_KEY"); // Replace this with your live publishable key
+const stripePromise = loadStripe("pk_live_51HA5oHHYcRfijJBsAxDzfvHf4LhhKoQputSDEU0rQcBTQvYWQi9ci76CAxSVIcRMjYDuzshvbK0qcxl8gSYnrXIc00axV69scf");
 
 const CheckoutForm = () => {
   const stripe = useStripe();
