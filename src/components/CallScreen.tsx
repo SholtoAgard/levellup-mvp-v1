@@ -568,6 +568,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
 
       //   await audioContext.resume();
       // }
+      audio.muted = true; // Start muted
 
       // Ensure AudioContext is resumed (important for Safari/iOS)
 
@@ -580,7 +581,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({ session }) => {
       // console.log("audio context,", audioContext);
 
       const playAudio = () => {
-        audio.muted = true; // Start muted
         console.log("in the play audio function");
 
         audio
