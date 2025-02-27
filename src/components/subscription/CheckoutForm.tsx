@@ -78,7 +78,7 @@ export const CheckoutForm = () => {
     try {
       console.log('Creating subscription for user:', userId);
       
-      const { data: subscriptionData, error: subscriptionError } = await supabase.functions.invoke('create-subscription', {
+      const response = await supabase.functions.invoke('create-subscription', {
         body: { 
           paymentMethodId: paymentMethod, 
           userId: userId,
@@ -86,53 +86,62 @@ export const CheckoutForm = () => {
         }
       });
 
-      if (subscriptionError) {
-        console.error('Subscription creation failed:', subscriptionError);
-        throw new Error(subscriptionError.message || 'Failed to create subscription');
+      // Log the complete response for debugging
+      console.log('Create subscription response:', JSON.stringify(response, null, 2));
+
+      if (response.error) {
+        console.error('Subscription creation failed:', response.error);
+        const errorMessage = response.error?.message || response.error?.toString() || 'Failed to create subscription';
+        throw new Error(errorMessage);
       }
 
-      if (!subscriptionData) {
+      if (!response.data) {
         console.error('No subscription data returned');
         throw new Error('Failed to create subscription - no data returned');
       }
 
-      console.log('Subscription created successfully:', subscriptionData);
+      console.log('Subscription created successfully:', response.data);
 
       // Add user to trial separately - don't block on this
-      try {
-        const { error: trialError } = await supabase.functions.invoke('add-trial-user', {
-          body: { 
-            email,
-            userId: userId
-          }
-        });
-
-        if (trialError) {
-          console.error('Error adding trial user:', trialError);
+      const trialResponse = await supabase.functions.invoke('add-trial-user', {
+        body: { 
+          email,
+          userId: userId
         }
-      } catch (error) {
-        console.error('Error adding trial user:', error);
-        // Continue even if this fails
+      });
+
+      // Log trial response for debugging
+      console.log('Add trial user response:', JSON.stringify(trialResponse, null, 2));
+
+      if (trialResponse.error) {
+        console.error('Error adding trial user:', trialResponse.error);
       }
 
       toast({
         title: "Success!",
         description: "Your free trial has started. Welcome to LevellUp!",
+        duration: 5000, // Show for 5 seconds
       });
 
       // Small delay to ensure toast is visible
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Clear loading state before navigation
+      setLoading(false);
+      
       navigate("/dashboard", { replace: true });
 
     } catch (error: any) {
       console.error("Subscription creation error:", error);
       setLoading(false);
+      
+      // Show a more detailed error message
       toast({
         title: "Subscription Error",
-        description: error.message || "Failed to set up subscription. Please try again or contact support.",
+        description: `Failed to set up subscription: ${error.message}. Please try again or contact support.`,
         variant: "destructive",
+        duration: 10000, // Show for 10 seconds
       });
-      throw error; // Re-throw to be caught by the signup handler
     }
   };
 
@@ -158,6 +167,8 @@ export const CheckoutForm = () => {
         password,
       });
 
+      console.log('Sign in attempt result:', { data: signInData, error: signInError });
+
       if (signInData.user) {
         console.log('Existing user signed in:', signInData.user.id);
         await createSubscription(signInData.user.id);
@@ -170,6 +181,8 @@ export const CheckoutForm = () => {
         password,
       });
 
+      console.log('Sign up attempt result:', { data: signUpData, error: signUpError });
+
       if (signUpError) {
         console.error('Signup error:', signUpError);
         if (signUpError.message.toLowerCase().includes('already registered')) {
@@ -177,6 +190,7 @@ export const CheckoutForm = () => {
             title: "Account exists",
             description: "Please use the correct password for your existing account.",
             variant: "destructive",
+            duration: 5000,
           });
           setLoading(false);
           return;
@@ -197,6 +211,7 @@ export const CheckoutForm = () => {
         title: "Error",
         description: error.message || "Failed to create your account. Please try again.",
         variant: "destructive",
+        duration: 5000,
       });
     }
   };
