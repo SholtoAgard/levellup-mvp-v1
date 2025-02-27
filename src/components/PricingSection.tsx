@@ -13,7 +13,9 @@ const PricingSection = () => {
     features: [
       "120 minutes of AI role-playing per month",
       "Email customer support (standard response time)",
-      "Basic AI-generated feedback & scoring (e.g., tone, confidence, objection handling)"
+      "Real-time AI-generated feedback & scoring (e.g., tone, confidence, objection handling)",
+      "Practice cold calls, discovery calls, and objection handling",
+      "Track your progress & improve faster"
     ]
   };
 

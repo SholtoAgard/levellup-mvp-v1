@@ -1,16 +1,157 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarProvider } from "@/components/ui/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
 import Footer from "@/components/Footer";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface FeedbackSections {
+  strengths: string[];
+  areasToImprove: string[];
+  recommendations: string[];
+  summary: string;
+  objectionHandling: string;
+  valueProposition: string;
+  closingEffectiveness: string;
+}
 
 const Feedback = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showButton, setShowButton] = useState(false);
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const sessionData = location.state || {};
+  const score = parseInt(sessionData.score) || 0;
+  const feedback = sessionData.feedback || "";
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowButton(true);
+    }, 30000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const parseFeedback = (feedbackText: string): FeedbackSections => {
+    console.log("feedbackText", feedbackText);
+    const sections: FeedbackSections = {
+      strengths: [],
+      areasToImprove: [],
+      recommendations: [],
+      summary: "",
+      objectionHandling: "N/A",
+      valueProposition: "N/A",
+      closingEffectiveness: "N/A",
+    };
+
+    const lines = feedbackText.split("\n");
+    lines.forEach((line) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith("Objection Handling:")) {
+        sections.objectionHandling = trimmedLine
+          .replace("Objection Handling:", "")
+          .trim();
+      } else if (trimmedLine.startsWith("Value Proposition:")) {
+        sections.valueProposition = trimmedLine
+          .replace("Value Proposition:", "")
+          .trim();
+      } else if (trimmedLine.startsWith("Closing Effectiveness:")) {
+        sections.closingEffectiveness = trimmedLine
+          .replace("Closing Effectiveness:", "")
+          .trim();
+      }
+    });
+
+    const feedbackPart =
+      feedbackText.split("FEEDBACK:")[1]?.trim() || feedbackText;
+    const paragraphs = feedbackPart.split("\n\n").filter((p) => p.trim());
+
+    sections.summary = paragraphs[0]?.trim() || "";
+
+    const remainingText = paragraphs.slice(1).join(" ");
+
+    const strengthPatterns = [
+      /(?:demonstrated|showed|exhibited|displayed|had|was|were)\s+(?:good|high|strong|effective|successful|excellent|polite)[^.!?]*[.!?]/gi,
+      /(?:good|high|strong|effective|successful|excellent|polite)[^.!?]*[.!?]/gi,
+    ];
+
+    strengthPatterns.forEach((pattern) => {
+      const matches = remainingText.match(pattern) || [];
+      sections.strengths.push(
+        ...matches
+          .filter((match) => !match.toLowerCase().includes("however"))
+          .map((match) => match.trim())
+      );
+    });
+
+    const improvementPatterns = [
+      /Areas for improvement include[^.]*(?:[^.]*\.)/gi,
+      /(?:need to|failed to|lack of|weak|improve|better|could have)[^.!?]*[.!?]/gi,
+      /(?:room for improvement)[^.!?]*[.!?]/gi,
+    ];
+
+    improvementPatterns.forEach((pattern) => {
+      const matches = remainingText.match(pattern) || [];
+      sections.areasToImprove.push(
+        ...matches
+          .map((match) =>
+            match.replace(/Areas for improvement include/i, "").trim()
+          )
+          .filter((match) => match.length > 0)
+      );
+    });
+
+    const recommendationPatterns = [
+      /(?:should|could|needs? to|try to|work on|focus on)[^.!?]*[.!?]/gi,
+    ];
+
+    recommendationPatterns.forEach((pattern) => {
+      const matches = remainingText.match(pattern) || [];
+      sections.recommendations.push(
+        ...matches
+          .filter((rec) => !sections.areasToImprove.includes(rec.trim()))
+          .map((rec) => rec.trim())
+      );
+    });
+
+    sections.strengths = [...new Set(sections.strengths)];
+    sections.areasToImprove = [...new Set(sections.areasToImprove)];
+    sections.recommendations = [...new Set(sections.recommendations)];
+
+    if (sections.strengths.length === 0) {
+      sections.strengths.push(
+        "Focus on the areas of improvement to enhance your performance."
+      );
+    }
+
+    return sections;
+  };
+
+  const feedbackSections = parseFeedback(feedback);
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getCallType = () => {
+    return sessionData.roleplay_type === "discovery_call" ? "Discovery Call" : "Cold Call";
+  };
 
   return (
     <SidebarProvider>
@@ -51,21 +192,108 @@ const Feedback = () => {
             </div>
           )}
 
-          <div className="p-8 flex-1">
-            <div className="max-w-3xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">Help Me Build the #1 Sales Training Platform</h1>
-              <div className="prose prose-lg">
-                <p className="text-gray-600 mb-6">At LevellUp, my mission is to create the most effective and widely used sales training platform in the world. To achieve that, I need your help!</p>
-                <p className="text-gray-600 mb-6">
-                  Your feedback is invaluable in shaping LevellUp into the ultimate tool for sales reps like you. By sharing your thoughts, you'll play a key role in improving the platform and making it even better.
-                </p>
-                <p className="text-gray-600 mb-8">
-                  Please click the "Give Your Feedback" button to take a short survey—it'll only take 3-5 minutes to complete. Thank you for helping me level up!
-                </p>
-                <Button size="lg" className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white" onClick={() => window.open('https://forms.gle/nWB65dFyuc8ctN5v6', '_blank')}>
-                  Give Your Feedback
+          <div className="p-4 sm:p-8 flex-1">
+            <div className="max-w-4xl mx-auto space-y-6">
+              <div className="flex justify-center mb-6">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => navigate("/dashboard")}
+                  className="w-full sm:w-auto"
+                >
+                  Back to Dashboard
                 </Button>
               </div>
+
+              <div className="space-y-6 text-left">
+                <h2 className="text-2xl">
+                  {getCallType()} -- {sessionData.avatarName || "AI Assistant"}
+                </h2>
+                
+                <div className="w-32 h-32 overflow-hidden">
+                  <img 
+                    src={sessionData.avatarImage || ""} 
+                    alt={sessionData.avatarName || "AI Assistant"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className={`text-4xl font-bold ${getScoreColor(score)}`}>
+                  {score}/100
+                </div>
+
+                <h3 className="text-lg font-medium">Understanding Your Score</h3>
+                
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="grid grid-cols-1 gap-6">
+                      {/* Strengths Section */}
+                      <div>
+                        <h4 className="text-left mb-2">Key Strengths</h4>
+                        <ol className="list-decimal pl-5 space-y-2">
+                          {feedbackSections.strengths.map((strength, index) => (
+                            <li key={index} className="text-gray-700 text-left">
+                              {strength}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+
+                      {/* Areas to Improve Section */}
+                      <div>
+                        <h4 className="text-left mb-2">Areas to Improve</h4>
+                        <ol className="list-decimal pl-5 space-y-2">
+                          {feedbackSections.areasToImprove.map((area, index) => (
+                            <li key={index} className="text-gray-700 text-left">
+                              {area}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+
+                      {/* Recommendations Section */}
+                      <div>
+                        <h4 className="text-left mb-2">Recommendations</h4>
+                        <ol className="list-decimal pl-5 space-y-2">
+                          {feedbackSections.recommendations.map((rec, index) => (
+                            <li key={index} className="text-gray-700 text-left">
+                              {rec}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+
+                      {/* Additional Metrics Section */}
+                      <div>
+                        <h4 className="text-left mb-2">Additional Metrics</h4>
+                        <div className="space-y-2">
+                          <p className="text-gray-700 text-left">
+                            Objection Handling: {feedbackSections.objectionHandling}
+                          </p>
+                          <p className="text-gray-700 text-left">
+                            Value Proposition: {feedbackSections.valueProposition}
+                          </p>
+                          <p className="text-gray-700 text-left">
+                            Closing Effectiveness: {feedbackSections.closingEffectiveness}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {showButton && (
+                <div className="flex justify-center">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white"
+                    onClick={() => navigate("/dashboard")}
+                  >
+                    Start New Practice
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           <Footer />

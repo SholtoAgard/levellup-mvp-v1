@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,24 +30,18 @@ const Header = () => {
   }, []);
 
   const handleLogout = async () => {
+    setSession(null);
+    navigate("/");
+    setIsOpen(false);
+
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Clear local session state
-      setSession(null);
-      
-      // Show success message
       toast({
         title: "Success",
         description: "You have been logged out successfully",
       });
-      
-      // Navigate to home page
-      navigate("/");
-      
-      // Close mobile menu if open
-      setIsOpen(false);
     } catch (error) {
       console.error('Logout error:', error);
       toast({
@@ -101,17 +94,14 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 bg-white z-50 border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <Link to="/" className="flex items-center">
             <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>LevellUp</span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             {renderNavItems()}
           </nav>
 
-          {/* Mobile Navigation */}
           {isMobile && (
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
@@ -127,7 +117,6 @@ const Header = () => {
             </Sheet>
           )}
 
-          {/* CTA Button */}
           <Button 
             className="bg-[#1E90FF] hover:bg-[#1E90FF]/90 text-white rounded-lg px-6 py-2 text-base font-medium"
             onClick={() => {
