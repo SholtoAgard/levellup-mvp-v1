@@ -78,7 +78,7 @@ export const CheckoutForm = () => {
     try {
       console.log('Creating subscription for user:', userId);
       
-      const { data, error } = await supabase.functions.invoke('create-subscription', {
+      const { data: subscriptionData, error: subscriptionError } = await supabase.functions.invoke('create-subscription', {
         body: { 
           paymentMethodId: paymentMethod, 
           userId: userId,
@@ -86,22 +86,33 @@ export const CheckoutForm = () => {
         }
       });
 
-      if (error || !data) {
-        console.error('Subscription error:', error);
-        throw new Error(error?.message || 'Failed to create subscription');
+      if (subscriptionError) {
+        console.error('Subscription creation failed:', subscriptionError);
+        throw new Error(subscriptionError.message || 'Failed to create subscription');
       }
 
-      console.log('Subscription created successfully:', data);
+      if (!subscriptionData) {
+        console.error('No subscription data returned');
+        throw new Error('Failed to create subscription - no data returned');
+      }
 
+      console.log('Subscription created successfully:', subscriptionData);
+
+      // Add user to trial separately - don't block on this
       try {
-        await supabase.functions.invoke('add-trial-user', {
+        const { error: trialError } = await supabase.functions.invoke('add-trial-user', {
           body: { 
             email,
             userId: userId
           }
         });
+
+        if (trialError) {
+          console.error('Error adding trial user:', trialError);
+        }
       } catch (error) {
         console.error('Error adding trial user:', error);
+        // Continue even if this fails
       }
 
       toast({
@@ -109,10 +120,19 @@ export const CheckoutForm = () => {
         description: "Your free trial has started. Welcome to LevellUp!",
       });
 
+      // Small delay to ensure toast is visible
+      await new Promise(resolve => setTimeout(resolve, 500));
       navigate("/dashboard", { replace: true });
+
     } catch (error: any) {
       console.error("Subscription creation error:", error);
-      throw new Error(error.message || "Failed to set up subscription");
+      setLoading(false);
+      toast({
+        title: "Subscription Error",
+        description: error.message || "Failed to set up subscription. Please try again or contact support.",
+        variant: "destructive",
+      });
+      throw error; // Re-throw to be caught by the signup handler
     }
   };
 
@@ -120,6 +140,11 @@ export const CheckoutForm = () => {
     event.preventDefault();
     if (!paymentMethod) {
       console.error('No payment method available');
+      toast({
+        title: "Error",
+        description: "Please enter payment information first.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -127,23 +152,26 @@ export const CheckoutForm = () => {
       setLoading(true);
       console.log('Starting signup process...');
 
-      const { data: { user: existingUser }, error: signInError } = await supabase.auth.signInWithPassword({
+      // First try to sign in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (existingUser) {
-        console.log('Existing user signed in:', existingUser.id);
-        await createSubscription(existingUser.id);
+      if (signInData.user) {
+        console.log('Existing user signed in:', signInData.user.id);
+        await createSubscription(signInData.user.id);
         return;
       }
 
-      const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
+      // If sign in fails, try to sign up
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (signUpError) {
+        console.error('Signup error:', signUpError);
         if (signUpError.message.toLowerCase().includes('already registered')) {
           toast({
             title: "Account exists",
@@ -156,11 +184,11 @@ export const CheckoutForm = () => {
         throw signUpError;
       }
 
-      if (!newUser?.id) {
+      if (!signUpData.user?.id) {
         throw new Error("Failed to create account - no user ID received");
       }
 
-      await createSubscription(newUser.id);
+      await createSubscription(signUpData.user.id);
 
     } catch (error: any) {
       console.error("Error during signup:", error);
