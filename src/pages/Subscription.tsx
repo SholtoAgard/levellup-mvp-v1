@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
@@ -14,7 +13,6 @@ import { useToast } from "@/components/ui/use-toast";
 import Footer from "@/components/Footer";
 import { Check } from "lucide-react";
 
-// Initialize Stripe with the publishable key
 const stripePromise = loadStripe("pk_test_51HA5oHHYcRfijJBsAxDzfvHf4LhhKoQputSDEU0rQcBTQvYWQi9ci76CAxSVIcRMjYDuzshvbK0qcxl8gSYnrXIc00axV69scf");
 
 const CheckoutForm = () => {
@@ -25,7 +23,7 @@ const CheckoutForm = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [step, setStep] = useState<'payment' | 'signup'>('payment');
+  const [step, setStep] = useState<'payment' | 'signup' | 'signin'>('payment');
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
 
   const handlePaymentSubmit = async (event: React.FormEvent) => {
@@ -50,7 +48,6 @@ const CheckoutForm = () => {
     try {
       setLoading(true);
       
-      // Create payment method
       const { error: stripeError, paymentMethod: pm } = await stripe.createPaymentMethod({
         type: "card",
         card: cardElement,
@@ -96,28 +93,58 @@ const CheckoutForm = () => {
       setLoading(true);
       console.log('Starting signup process...');
 
-      // Sign up the user
-      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+      const { data: { user: existingUser }, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (existingUser) {
+        console.log('Existing user signed in:', existingUser.id);
+        await createSubscription(existingUser.id);
+        return;
+      }
+
+      const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (signUpError) {
-        console.error('Signup error:', signUpError);
+        if (signUpError.message.toLowerCase().includes('already registered')) {
+          toast({
+            title: "Account exists",
+            description: "Please use the correct password for your existing account.",
+            variant: "destructive",
+          });
+          return;
+        }
         throw signUpError;
       }
 
-      if (!user?.id) {
+      if (!newUser?.id) {
         throw new Error("Failed to create account - no user ID received");
       }
 
-      console.log('User created successfully:', user.id);
+      await createSubscription(newUser.id);
 
-      // Create subscription
+    } catch (error: any) {
+      console.error("Error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create your account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createSubscription = async (userId: string) => {
+    try {
       const { data: subscriptionData, error: subscriptionError } = await supabase.functions.invoke('create-subscription', {
         body: { 
           paymentMethodId: paymentMethod, 
-          userId: user.id,
+          userId: userId,
           email: email
         }
       });
@@ -129,17 +156,15 @@ const CheckoutForm = () => {
 
       console.log('Subscription created:', subscriptionData);
 
-      // Add user to onboarding email sequence
       const { error: onboardingError } = await supabase.functions.invoke('add-trial-user', {
         body: { 
           email,
-          userId: user.id
+          userId: userId
         }
       });
 
       if (onboardingError) {
         console.error('Error adding to onboarding sequence:', onboardingError);
-        // Don't throw here as it's not critical to the signup process
       }
 
       toast({
@@ -147,25 +172,14 @@ const CheckoutForm = () => {
         description: "Your free trial has started. Welcome to LevellUp!",
       });
 
-      // Navigate to dashboard after successful signup
       navigate("/dashboard");
     } catch (error: any) {
-      console.error("Error:", error);
+      console.error("Subscription creation error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create your account. Please try again.",
+        description: error.message || "Failed to set up subscription. Please try again.",
         variant: "destructive",
       });
-
-      if (error.message?.toLowerCase().includes('already registered')) {
-        toast({
-          title: "Account exists",
-          description: "Please log in to your existing account instead.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -196,6 +210,7 @@ const CheckoutForm = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            minLength={6}
           />
         </div>
         <Button
@@ -203,7 +218,7 @@ const CheckoutForm = () => {
           disabled={loading}
           className="w-full bg-[#1E90FF] hover:bg-[#1E90FF]/90"
         >
-          {loading ? "Creating Account..." : "Create Account & Start Free Trial"}
+          {loading ? "Processing..." : "Create Account & Start Free Trial"}
         </Button>
       </form>
     );
