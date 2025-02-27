@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import Footer from "@/components/Footer";
 import { Check } from "lucide-react";
 
-// Initialize Stripe with test publishable key
+// Initialize Stripe with the publishable key
 const stripePromise = loadStripe("pk_test_51HA5oHHYcRfijJBsAxDzfvHf4LhhKoQputSDEU0rQcBTQvYWQi9ci76CAxSVIcRMjYDuzshvbK0qcxl8gSYnrXIc00axV69scf");
 
 const CheckoutForm = () => {
@@ -30,7 +30,22 @@ const CheckoutForm = () => {
 
   const handlePaymentSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!stripe || !elements) return;
+    
+    if (!stripe || !elements) {
+      console.error('Stripe.js has not loaded');
+      toast({
+        title: "Error",
+        description: "Payment processing is not available. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+      console.error('Card Element not found');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -38,15 +53,22 @@ const CheckoutForm = () => {
       // Create payment method
       const { error: stripeError, paymentMethod: pm } = await stripe.createPaymentMethod({
         type: "card",
-        card: elements.getElement(CardElement)!,
+        card: cardElement,
       });
 
       if (stripeError) {
+        console.error('Stripe error:', stripeError);
         throw stripeError;
       }
 
+      if (!pm) {
+        throw new Error('No payment method created');
+      }
+
+      console.log('Payment method created:', pm.id);
       setPaymentMethod(pm.id);
       setStep('signup');
+      
       toast({
         title: "Payment method saved!",
         description: "Now create your account to start your free trial.",
@@ -65,10 +87,14 @@ const CheckoutForm = () => {
 
   const handleSignupSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!paymentMethod) return;
+    if (!paymentMethod) {
+      console.error('No payment method available');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Starting signup process...');
 
       // Sign up the user
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
@@ -91,7 +117,8 @@ const CheckoutForm = () => {
       const { data: subscriptionData, error: subscriptionError } = await supabase.functions.invoke('create-subscription', {
         body: { 
           paymentMethodId: paymentMethod, 
-          userId: user.id 
+          userId: user.id,
+          email: email
         }
       });
 
@@ -100,9 +127,7 @@ const CheckoutForm = () => {
         throw new Error(subscriptionError.message || 'Failed to set up subscription');
       }
 
-      if (!subscriptionData) {
-        throw new Error('No subscription data received');
-      }
+      console.log('Subscription created:', subscriptionData);
 
       // Add user to onboarding email sequence
       const { error: onboardingError } = await supabase.functions.invoke('add-trial-user', {
@@ -117,13 +142,12 @@ const CheckoutForm = () => {
         // Don't throw here as it's not critical to the signup process
       }
 
-      console.log('Subscription created successfully:', subscriptionData);
-
       toast({
         title: "Success!",
-        description: "Your free trial has started. Enjoy LevellUp!",
+        description: "Your free trial has started. Welcome to LevellUp!",
       });
 
+      // Navigate to dashboard after successful signup
       navigate("/dashboard");
     } catch (error: any) {
       console.error("Error:", error);
@@ -133,7 +157,6 @@ const CheckoutForm = () => {
         variant: "destructive",
       });
 
-      // If the error indicates the user already exists, show a specific message
       if (error.message?.toLowerCase().includes('already registered')) {
         toast({
           title: "Account exists",
