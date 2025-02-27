@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
@@ -93,6 +94,7 @@ const CheckoutForm = () => {
       setLoading(true);
       console.log('Starting signup process...');
 
+      // First check if user exists
       const { data: { user: existingUser }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -104,6 +106,7 @@ const CheckoutForm = () => {
         return;
       }
 
+      // User doesn't exist or password is wrong, try to sign up
       const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -116,6 +119,7 @@ const CheckoutForm = () => {
             description: "Please use the correct password for your existing account.",
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
         throw signUpError;
@@ -128,7 +132,7 @@ const CheckoutForm = () => {
       await createSubscription(newUser.id);
 
     } catch (error: any) {
-      console.error("Error:", error);
+      console.error("Error during signup:", error);
       setLoading(false);
       toast({
         title: "Error",
@@ -150,31 +154,34 @@ const CheckoutForm = () => {
         }
       });
 
-      if (error) {
+      if (error || !data) {
         console.error('Subscription error:', error);
-        throw error;
+        throw new Error(error?.message || 'Failed to create subscription');
       }
 
-      console.log('Subscription response:', data);
+      console.log('Subscription created successfully:', data);
+
+      try {
+        await supabase.functions.invoke('add-trial-user', {
+          body: { 
+            email,
+            userId: userId
+          }
+        });
+      } catch (error) {
+        console.error('Error adding trial user:', error);
+        // Continue even if this fails
+      }
 
       toast({
         title: "Success!",
         description: "Your free trial has started. Welcome to LevellUp!",
       });
 
-      await supabase.functions.invoke('add-trial-user', {
-        body: { 
-          email,
-          userId: userId
-        }
-      });
-
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       console.error("Subscription creation error:", error);
       throw new Error(error.message || "Failed to set up subscription");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -192,6 +199,7 @@ const CheckoutForm = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            disabled={loading}
           />
         </div>
         <div>
@@ -206,6 +214,7 @@ const CheckoutForm = () => {
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
             minLength={6}
+            disabled={loading}
           />
         </div>
         <Button
