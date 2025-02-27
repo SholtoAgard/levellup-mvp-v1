@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStripe, useElements } from "@stripe/react-stripe-js";
+import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { SignupForm } from "./SignupForm";
@@ -41,8 +41,8 @@ export const CheckoutForm = () => {
       setLoading(true);
       
       const { error: stripeError, paymentMethod: pm } = await stripe.createPaymentMethod({
-        type: "card",
         card: cardElement,
+        type: 'card'
       });
 
       if (stripeError) {
