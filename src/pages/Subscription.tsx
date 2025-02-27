@@ -129,19 +129,20 @@ const CheckoutForm = () => {
 
     } catch (error: any) {
       console.error("Error:", error);
+      setLoading(false);
       toast({
         title: "Error",
         description: error.message || "Failed to create your account. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const createSubscription = async (userId: string) => {
     try {
-      const { data: subscriptionData, error: subscriptionError } = await supabase.functions.invoke('create-subscription', {
+      console.log('Creating subscription for user:', userId);
+      
+      const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: { 
           paymentMethodId: paymentMethod, 
           userId: userId,
@@ -149,37 +150,31 @@ const CheckoutForm = () => {
         }
       });
 
-      if (subscriptionError) {
-        console.error('Subscription error:', subscriptionError);
-        throw new Error(subscriptionError.message || 'Failed to set up subscription');
+      if (error) {
+        console.error('Subscription error:', error);
+        throw error;
       }
 
-      console.log('Subscription created:', subscriptionData);
-
-      const { error: onboardingError } = await supabase.functions.invoke('add-trial-user', {
-        body: { 
-          email,
-          userId: userId
-        }
-      });
-
-      if (onboardingError) {
-        console.error('Error adding to onboarding sequence:', onboardingError);
-      }
+      console.log('Subscription response:', data);
 
       toast({
         title: "Success!",
         description: "Your free trial has started. Welcome to LevellUp!",
       });
 
+      await supabase.functions.invoke('add-trial-user', {
+        body: { 
+          email,
+          userId: userId
+        }
+      });
+
       navigate("/dashboard");
     } catch (error: any) {
       console.error("Subscription creation error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to set up subscription. Please try again.",
-        variant: "destructive",
-      });
+      throw new Error(error.message || "Failed to set up subscription");
+    } finally {
+      setLoading(false);
     }
   };
 
